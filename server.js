@@ -7,8 +7,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json({ limit: '10mb' }));
-
+app.use(express.json({ limit: '20mb' }));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -21,10 +20,9 @@ const { TELEGRAM_TOKEN, ANTHROPIC_API_KEY, OPENAI_API_KEY, API_SECRET, PORT = 30
 const TG = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// ── STORAGE ──
 function load() {
   try { if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-  catch(e) {}
+  catch(e) { console.error('Load error:', e); }
   return { library: [], cards: [], events: [], beliefs: [], intro: null };
 }
 function save(d) {
@@ -33,13 +31,14 @@ function save(d) {
 }
 let DB = load();
 
-// ── TELEGRAM ──
 async function tgSend(chatId, text, extra = {}) {
-  await fetch(`${TG}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', ...extra })
-  });
+  try {
+    await fetch(`${TG}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', ...extra })
+    });
+  } catch(e) { console.error('tgSend error:', e); }
 }
 
 async function downloadFile(fileId) {
@@ -50,9 +49,8 @@ async function downloadFile(fileId) {
   return { buffer: Buffer.from(await res.arrayBuffer()), filePath: fp };
 }
 
-// ── WHISPER ──
 async function transcribe(buffer, filePath) {
-  if (!OPENAI_API_KEY) return { text: '[голосовое — нет OpenAI ключа]', ok: false };
+  if (!OPENAI_API_KEY) return '[голосовое — нет OpenAI ключа]';
   const form = new FormData();
   const ext = filePath.split('.').pop() || 'ogg';
   form.append('file', buffer, { filename: `audio.${ext}`, contentType: 'audio/ogg' });
@@ -64,55 +62,46 @@ async function transcribe(buffer, filePath) {
     body: form
   });
   const j = await r.json();
-  return { text: j.text || '[не удалось расшифровать]', ok: !!j.text };
+  return j.text || '[не удалось расшифровать]';
 }
 
-// ── CLAUDE ANALYSIS ──
-const SYSTEM = `Ты анализируешь личные сообщения человека — его мысли, сны, планы, обиды, восхищения.
+const SYSTEM = `Ты анализируешь личные сообщения человека. Определи рубрику и извлеки данные.
 
-Определи рубрику и извлеки структурированные данные.
-
-Отвечай ТОЛЬКО валидным JSON-объектом без markdown:
+Отвечай ТОЛЬКО валидным JSON без markdown:
 {
-  "rubric": "idea|dream|plan|resentment|admiration|quote|current",
-  "items": [
-    {
-      "title": "краткое название (до 60 символов)",
-      "body": "суть (2-4 предложения)",
-      "type": "belief|question|shifting|tension|abandoned",
-      "domain": "love|mind|society|self|work|other",
-      "was": "",
-      "now": "",
-      "source": "",
-      "emotion": ""
-    }
-  ]
+  "rubric": "idea|dream|task|thought|resentment|admiration|quote|media|context",
+  "items": [{
+    "title": "название до 70 символов",
+    "body": "суть 2-4 предложения",
+    "type": "belief|question|shifting|tension|abandoned",
+    "domain": "love|mind|society|self|work|other",
+    "was": "",
+    "now": "",
+    "source": "",
+    "emotion": "",
+    "priority": ""
+  }]
 }
 
-Рубрики:
-- idea: идея, убеждение, мысль о жизни, философия → попадает в карту личности
-- dream: сон, образ приснившийся → важно сохранить образы и эмоцию
-- plan: планы, намерения, что хочет сделать
-- resentment: обида, раздражение, что задело
-- admiration: восхищение, что впечатлило, чужая мысль которая резонирует
-- quote: чужой контент (статья, пост, цитата) + комментарий автора
-- current: текущие дела, заботы, контекст жизни, бытовое
+РУБРИКИ:
+- idea: убеждение, философская мысль, идея о жизни → в карту личности
+- dream: сон — сохрани образы, сюжет, эмоцию
+- task: конкретное действие, задача, план сделать что-то
+- thought: незавершённая мысль, рассуждение вслух, не оформилось ещё
+- resentment: обида, раздражение, что задело или злит
+- admiration: восхищение, что впечатлило, резонирует
+- quote: чужой контент + комментарий автора (смотри на контекст "переслано из")
+- media: книга, фильм, подкаст, статья — впечатления или цитата
+- context: что происходит в жизни, бытовое, дела, заботы
 
-Для рубрики dream:
-- title: главный образ или событие сна
-- body: описание сна
-- emotion: эмоция во сне и после пробуждения
-- type и domain можно оставить пустыми
-
-Для idea — заполни type и domain обязательно:
-Типы: belief (убеждение), question (открытый вопрос), shifting (меняется), tension (противоречие), abandoned (отказался)
-Домены: love, mind, society, self, work, other
-
-Если несколько разных вещей в одном сообщении — несколько items.
-Если непонятно что это — рубрика current.`;
+Для task — в priority напиши: high/medium/low если понятно из контекста.
+Для dream — в emotion напиши эмоцию во сне и после пробуждения.
+Для idea — type и domain обязательны.
+Если несколько тем в одном сообщении — несколько items с разными rubric (возьми наиболее частую как основную).
+Если непонятно — rubric = thought.`;
 
 async function analyze(text, context = '') {
-  const msg = context ? `${context}\n\n${text}` : text;
+  const msg = context ? `${context}\n\nТекст:\n${text}` : text;
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
@@ -120,13 +109,13 @@ async function analyze(text, context = '') {
   });
   const data = await r.json();
   const raw = data.content?.map(c => c.text || '').join('') || '{}';
-  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  try { return JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+  catch(e) { return { rubric: 'thought', items: [{ title: text.slice(0, 60), body: text }] }; }
 }
 
-const RUBRIC_EMOJI = { idea:'🔥', dream:'🌙', plan:'📋', resentment:'😤', admiration:'✨', quote:'💬', current:'🌀' };
-const RUBRIC_LABEL = { idea:'Идея', dream:'Сон', plan:'План', resentment:'Обида', admiration:'Восхищение', quote:'Цитата', current:'Текущее' };
+const R_EMOJI = { idea:'🔥', dream:'🌙', task:'🎯', thought:'💭', resentment:'😤', admiration:'✨', quote:'💬', media:'📖', context:'🌀' };
+const R_LABEL = { idea:'Идея', dream:'Сон', task:'Задача', thought:'Мысль', resentment:'Обида', admiration:'Восхищение', quote:'Цитата', media:'Медиа', context:'Контекст' };
 
-// ── MESSAGE HANDLER ──
 async function handle(msg) {
   const chatId = msg.chat.id;
   const ts = new Date(msg.date * 1000);
@@ -135,69 +124,62 @@ async function handle(msg) {
 
   let text = '', sourceType = 'text', context = '';
 
-  // Commands
   if (msg.text?.startsWith('/')) {
     const cmd = msg.text.split(' ')[0];
     if (cmd === '/start') {
-      await tgSend(chatId, `👋 <b>Привет! Я твой личный дневник.</b>\n\nПросто пиши, диктуй или пересылай — я разберу и сохраню.\n\n<b>Что я понимаю:</b>\n🔥 Идеи и убеждения\n🌙 Сны\n📋 Планы\n😤 Обиды\n✨ Восхищения\n💬 Чужое + твой комментарий\n🌀 Текущие дела\n\n<b>Форматы:</b>\n• Текст\n• Голосовое 🎙\n• Пересланный пост с комментарием\n• Фото с подписью\n\n/stats /last /dreams /plans`);
+      await tgSend(chatId, `👋 <b>Привет! Я твой личный дневник.</b>\n\nПросто пиши или диктуй — разберу и сохраню в нужную рубрику.\n\n🔥 Идеи & убеждения\n🌙 Сны\n🎯 Задачи\n💭 Мысли вслух\n😤 Обиды\n✨ Восхищения\n💬 Чужое + комментарий\n📖 Книги & фильмы\n🌀 Контекст\n\n<b>Форматы:</b> текст, голосовое 🎙, пересланное с комментарием\n\n/stats /last /tasks /dreams`);
       return;
     }
     if (cmd === '/stats') {
       const counts = {};
       DB.library.forEach(e => counts[e.rubric] = (counts[e.rubric]||0)+1);
-      const lines = Object.entries(RUBRIC_EMOJI).map(([k,e]) => `${e} ${RUBRIC_LABEL[k]}: ${counts[k]||0}`).join('\n');
-      await tgSend(chatId, `📊 <b>Библиотека:</b>\n${lines}\n\n<b>Всего записей:</b> ${DB.library.length}\n<b>Идей в карте:</b> ${DB.cards.filter(c=>c.rubric==='idea').length}`);
+      const lines = Object.entries(R_EMOJI).map(([k,e]) => `${e} ${R_LABEL[k]}: ${counts[k]||0}`).join('\n');
+      await tgSend(chatId, `📊 <b>Дневник:</b>\n${lines}\n\n<b>Всего:</b> ${DB.library.length}`);
       return;
     }
     if (cmd === '/last') {
-      const last = DB.library.slice(0,5);
+      const last = DB.library.slice(0, 6);
       if (!last.length) { await tgSend(chatId, 'Пока пусто.'); return; }
-      const lines = last.map(e => `${RUBRIC_EMOJI[e.rubric]||'•'} <b>${e.title||e.text?.slice(0,40)}</b>\n<i>${e.date}</i>`).join('\n\n');
-      await tgSend(chatId, `🗂 <b>Последние записи:</b>\n\n${lines}`);
+      const lines = last.map(e => `${R_EMOJI[e.rubric]||'•'} <b>${e.title||e.text?.slice(0,40)||'—'}</b> · ${e.date}`).join('\n');
+      await tgSend(chatId, `🗂 <b>Последние:</b>\n\n${lines}`);
+      return;
+    }
+    if (cmd === '/tasks') {
+      const tasks = DB.library.filter(e => e.rubric === 'task').slice(0, 10);
+      if (!tasks.length) { await tgSend(chatId, 'Задач пока нет.'); return; }
+      const hi = tasks.filter(t => t.priority === 'high').map(t => `🔴 ${t.title}`).join('\n');
+      const md = tasks.filter(t => t.priority !== 'high').map(t => `⚪ ${t.title}`).join('\n');
+      await tgSend(chatId, `<b>Задачи:</b>\n${hi ? hi+'\n' : ''}${md}`);
       return;
     }
     if (cmd === '/dreams') {
-      const dreams = DB.library.filter(e=>e.rubric==='dream').slice(0,5);
+      const dreams = DB.library.filter(e => e.rubric === 'dream').slice(0, 5);
       if (!dreams.length) { await tgSend(chatId, 'Снов пока нет.'); return; }
-      const lines = dreams.map(e=>`🌙 <b>${e.title}</b>\n${e.date}\n<i>${e.body?.slice(0,80)}...</i>`).join('\n\n');
+      const lines = dreams.map(e => `🌙 <b>${e.title||'Сон'}</b>\n${e.date}\n<i>${e.body?.slice(0,100)||''}...</i>`).join('\n\n');
       await tgSend(chatId, lines);
-      return;
-    }
-    if (cmd === '/plans') {
-      const plans = DB.library.filter(e=>e.rubric==='plan').slice(0,8);
-      if (!plans.length) { await tgSend(chatId, 'Планов пока нет.'); return; }
-      const lines = plans.map(e=>`📋 ${e.title}`).join('\n');
-      await tgSend(chatId, `<b>Планы:</b>\n${lines}`);
       return;
     }
     return;
   }
 
-  // Forward
   if (msg.forward_from || msg.forward_from_chat || msg.forward_sender_name) {
     const from = msg.forward_from_chat?.title || msg.forward_from?.first_name || msg.forward_sender_name || 'неизвестно';
     sourceType = 'forward';
-    context = `Переслано из: ${from}${msg.caption ? `\nКомментарий автора: ${msg.caption}` : ''}`;
+    context = `Человек переслал контент из: "${from}"`;
+    if (msg.caption) context += `\nЕго комментарий к пересланному: "${msg.caption}"`;
     text = msg.text || msg.caption || '';
-  }
-  // Voice
-  else if (msg.voice || msg.audio) {
+  } else if (msg.voice || msg.audio) {
     await tgSend(chatId, '🎙 Транскрибирую...');
     const fileId = (msg.voice || msg.audio).file_id;
     const { buffer, filePath } = await downloadFile(fileId);
-    const result = await transcribe(buffer, filePath);
-    text = result.text;
+    text = await transcribe(buffer, filePath);
     sourceType = 'voice';
-    context = 'Голосовая заметка человека, мысли вслух.';
-  }
-  // Photo
-  else if (msg.photo) {
+    context = 'Голосовая заметка, мысли вслух.';
+  } else if (msg.photo) {
     text = msg.caption || '';
     sourceType = 'photo';
     if (!text) { await tgSend(chatId, 'Фото без подписи — добавь текст 🙂'); return; }
-  }
-  // Text
-  else if (msg.text) {
+  } else if (msg.text) {
     text = msg.text;
   } else return;
 
@@ -207,78 +189,67 @@ async function handle(msg) {
 
   try {
     const result = await analyze(text, context);
-    const rubric = result.rubric || 'current';
+    const rubric = result.rubric || 'thought';
     const items = result.items || [];
-    const dateNow = new Date().toLocaleDateString('ru-RU', { month:'short', year:'numeric' });
 
-    // Сохраняем в библиотеку
     const libEntry = {
       id: Date.now(),
-      date: dateStr,
-      time: timeStr,
-      sourceType,
-      rubric,
-      text,
-      title: items[0]?.title || text.slice(0,50),
+      date: dateStr, time: timeStr,
+      sourceType, rubric, text,
+      title: items[0]?.title || text.slice(0, 60),
       body: items[0]?.body || '',
       emotion: items[0]?.emotion || '',
+      priority: items[0]?.priority || '',
       context: context || null,
+      items,
       analyzedAt: new Date().toISOString()
     };
     DB.library.unshift(libEntry);
 
-    // Сохраняем в карточки
+    const dateShort = new Date().toLocaleDateString('ru-RU', { month:'short', year:'numeric' });
     items.forEach(item => {
-      DB.cards.unshift({
-        ...item,
-        rubric,
-        date: dateNow,
-        libId: libEntry.id,
-        addedAt: new Date().toISOString()
-      });
+      DB.cards.unshift({ ...item, rubric: result.rubric, date: dateShort, libId: libEntry.id, addedAt: new Date().toISOString() });
     });
 
     save(DB);
 
-    // Ответ боту
-    const emoji = RUBRIC_EMOJI[rubric] || '•';
-    const label = RUBRIC_LABEL[rubric] || rubric;
-    let reply = `${emoji} <b>${label}</b> сохранено\n`;
-    if (sourceType === 'voice') reply += `🎙 <i>транскрибировано из аудио</i>\n`;
+    const emoji = R_EMOJI[rubric] || '•';
+    const label = R_LABEL[rubric] || rubric;
+    let reply = `${emoji} <b>${label}</b>\n`;
+    if (sourceType === 'voice') reply += `<i>🎙 расшифровано из аудио</i>\n`;
     reply += '\n';
-    items.forEach(item => {
-      reply += `<b>${item.title}</b>\n<i>${item.body?.slice(0,100)}${item.body?.length>100?'…':''}</i>\n\n`;
-    });
-    if (!items.length) reply += '<i>сохранено в библиотеку</i>';
-
+    if (items.length) {
+      items.forEach(item => {
+        reply += `<b>${item.title}</b>\n<i>${(item.body||'').slice(0, 120)}${(item.body||'').length > 120 ? '…' : ''}</i>\n`;
+        if (item.emotion) reply += `<i>${item.emotion}</i>\n`;
+        if (item.priority === 'high') reply += `🔴 высокий приоритет\n`;
+      });
+    } else {
+      reply += '<i>сохранено</i>';
+    }
     await tgSend(chatId, reply.trim());
   } catch(e) {
-    console.error('Error:', e);
-    // Сохраняем даже при ошибке анализа
-    DB.library.unshift({ id: Date.now(), date: dateStr, time: timeStr, sourceType, rubric: 'current', text, title: text.slice(0,50), analyzedAt: null });
+    console.error('Handle error:', e);
+    DB.library.unshift({ id: Date.now(), date: dateStr, time: timeStr, sourceType, rubric: 'thought', text, title: text.slice(0,60), analyzedAt: null });
     save(DB);
-    await tgSend(chatId, '⚠️ Ошибка анализа, но текст сохранён в библиотеку.');
+    await tgSend(chatId, '⚠️ Ошибка анализа, текст сохранён.');
   }
 }
 
-// ── WEBHOOK ──
 app.post(`/webhook/${TELEGRAM_TOKEN}`, async (req, res) => {
   res.sendStatus(200);
   const { message } = req.body;
   if (message) { try { await handle(message); } catch(e) { console.error(e); } }
 });
 
-// ── API ──
 function auth(req, res) {
   if (!API_SECRET) return true;
   if (req.headers.authorization !== `Bearer ${API_SECRET}`) { res.status(401).json({ error: 'unauthorized' }); return false; }
   return true;
 }
 
-app.get('/health', (req, res) => res.json({ ok: true, library: DB.library.length, cards: DB.cards.length }));
-
+app.get('/health', (req, res) => res.json({ ok: true, library: DB.library.length, cards: DB.cards.length, updatedAt: DB.updatedAt }));
 app.get('/api/data', (req, res) => { if (!auth(req,res)) return; DB = load(); res.json(DB); });
-
 app.post('/api/sync', (req, res) => {
   if (!auth(req,res)) return;
   const { cards, events, beliefs, intro } = req.body;
@@ -288,25 +259,41 @@ app.post('/api/sync', (req, res) => {
   if (intro !== undefined) DB.intro = intro;
   save(DB); res.json({ ok: true, updatedAt: DB.updatedAt });
 });
-
-app.delete('/api/cards/:idx', (req, res) => {
-  if (!auth(req,res)) return;
-  DB.cards.splice(parseInt(req.params.idx), 1); save(DB); res.json({ ok: true });
-});
-
 app.put('/api/cards/:idx', (req, res) => {
   if (!auth(req,res)) return;
   const idx = parseInt(req.params.idx);
   if (idx < 0 || idx >= DB.cards.length) return res.status(404).json({ error: 'not found' });
   DB.cards[idx] = { ...DB.cards[idx], ...req.body }; save(DB); res.json({ ok: true });
 });
-
+app.delete('/api/cards/:idx', (req, res) => {
+  if (!auth(req,res)) return;
+  DB.cards.splice(parseInt(req.params.idx), 1); save(DB); res.json({ ok: true });
+});
 app.delete('/api/library/:idx', (req, res) => {
   if (!auth(req,res)) return;
   DB.library.splice(parseInt(req.params.idx), 1); save(DB); res.json({ ok: true });
 });
 
-// ── WEBHOOK SETUP ──
+// Bulk import endpoint
+app.post('/api/import', async (req, res) => {
+  if (!auth(req,res)) return;
+  const { text, source } = req.body;
+  if (!text) return res.status(400).json({ error: 'no text' });
+  try {
+    const chunks = text.match(/.{1,3000}/gs) || [text];
+    let allItems = [];
+    for (const chunk of chunks.slice(0, 10)) {
+      const result = await analyze(chunk, source ? `Источник импорта: ${source}` : '');
+      if (result.items) allItems = allItems.concat(result.items.map(i => ({ ...i, rubric: result.rubric })));
+    }
+    const dateShort = new Date().toLocaleDateString('ru-RU', { month:'short', year:'numeric' });
+    allItems.forEach(item => DB.cards.unshift({ ...item, date: dateShort, fromImport: source || 'import', addedAt: new Date().toISOString() }));
+    DB.library.unshift({ id: Date.now(), date: dateShort, time: '', sourceType: 'import', rubric: 'context', text: text.slice(0, 500) + (text.length > 500 ? '…' : ''), title: `Импорт: ${source || 'файл'}`, body: `${allItems.length} записей`, analyzedAt: new Date().toISOString() });
+    save(DB);
+    res.json({ ok: true, imported: allItems.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 async function setupWebhook() {
   const url = process.env.WEBHOOK_URL;
   if (!url) { console.log('WEBHOOK_URL не задан'); return; }
