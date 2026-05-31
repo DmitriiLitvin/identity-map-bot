@@ -79,7 +79,8 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
     "now": "",
     "source": "",
     "emotion": "",
-    "priority": ""
+    "priority": "",
+    "tags": ["тег1", "тег2"]
   }]
 }
 
@@ -97,6 +98,7 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
 Для task — в priority напиши: high/medium/low если понятно из контекста.
 Для dream — в emotion напиши эмоцию во сне и после пробуждения.
 Для idea — type и domain обязательны.
+В tags — 2-4 ключевых слова-темы одним словом (например: "математика", "язык", "самодостаточность").
 Если несколько тем в одном сообщении — несколько items с разными rubric (возьми наиболее частую как основную).
 Если непонятно — rubric = thought.`;
 
@@ -192,6 +194,7 @@ async function handle(msg) {
     const rubric = result.rubric || 'thought';
     const items = result.items || [];
 
+    const allTags = [...new Set(items.flatMap(i => i.tags || []))];
     const libEntry = {
       id: Date.now(),
       date: dateStr, time: timeStr,
@@ -200,6 +203,7 @@ async function handle(msg) {
       body: items[0]?.body || '',
       emotion: items[0]?.emotion || '',
       priority: items[0]?.priority || '',
+      tags: allTags,
       context: context || null,
       items,
       analyzedAt: new Date().toISOString()
@@ -292,6 +296,61 @@ app.post('/api/import', async (req, res) => {
     save(DB);
     res.json({ ok: true, imported: allItems.length });
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── CHAT ENDPOINT ──
+app.post('/api/chat', async (req, res) => {
+  if (!auth(req, res)) return;
+  const { question, history = [] } = req.body;
+  if (!question) return res.status(400).json({ error: 'no question' });
+
+  // Умный поиск: находим релевантные записи по словам из вопроса
+  const words = question.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  const scored = DB.library.map(e => {
+    const haystack = `${e.title} ${e.body} ${e.text} ${(e.tags||[]).join(' ')}`.toLowerCase();
+    const hits = words.filter(w => haystack.includes(w)).length;
+    return { entry: e, hits };
+  }).filter(x => x.hits > 0).sort((a, b) => b.hits - a.hits);
+
+  // Берём топ-30 релевантных + все идеи
+  const relevant = scored.slice(0, 30).map(x => x.entry);
+  const ideas = DB.cards.filter(c => c.rubric === 'idea');
+
+  // Формируем контекст
+  const ctxIdeas = ideas.map(c =>
+    `[ИДЕЯ · ${c.type||''} · ${c.domain||''}] ${c.title}${c.body ? ': ' + c.body : ''}${c.was ? ` (было: ${c.was} → стало: ${c.now})` : ''}`
+  ).join('\n');
+
+  const ctxEntries = relevant.map(e =>
+    `[${e.date} · ${e.rubric}${e.tags?.length ? ' · ' + e.tags.join(', ') : ''}] ${e.title}${e.body ? ': ' + e.body : ''}${e.text && e.text !== e.body ? '\nОригинал: ' + e.text.slice(0, 400) : ''}`
+  ).join('\n\n');
+
+  const system = `Ты — личный интеллектуальный помощник Дмитрия. Ты знаешь его записи, идеи и убеждения.
+Отвечай на вопросы опираясь на его данные. Будь конкретным — цитируй его мысли, называй даты.
+Если данных по теме нет — честно скажи. Отвечай по-русски, коротко и точно.
+
+КАРТА ЛИЧНОСТИ (идеи и убеждения):
+${ctxIdeas || 'нет данных'}
+
+РЕЛЕВАНТНЫЕ ЗАПИСИ ИЗ БИБЛИОТЕКИ:
+${ctxEntries || 'нет совпадений по запросу'}`;
+
+  try {
+    const messages = [
+      ...history.slice(-6).map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: question }
+    ];
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system, messages })
+    });
+    const data = await r.json();
+    const answer = data.content?.map(c => c.text || '').join('') || 'Ошибка ответа';
+    res.json({ answer, sources: relevant.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 async function setupWebhook() {
