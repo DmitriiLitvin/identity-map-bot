@@ -298,6 +298,25 @@ app.post('/api/import', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── BULK RAW IMPORT (без Claude-анализа) ──
+app.post('/api/bulk-raw', async (req, res) => {
+  if (!auth(req, res)) return;
+  const { entries } = req.body;
+  if (!Array.isArray(entries)) return res.status(400).json({ error: 'entries must be array' });
+  let added = 0, skipped = 0;
+  const existingIds = new Set(DB.library.map(e => e.id));
+  for (const entry of entries) {
+    if (existingIds.has(entry.id)) { skipped++; continue; }
+    DB.library.push(entry);
+    existingIds.add(entry.id);
+    added++;
+  }
+  // Сортируем по дате (новые сначала)
+  DB.library.sort((a, b) => b.id - a.id);
+  save(DB);
+  res.json({ ok: true, added, skipped, total: DB.library.length });
+});
+
 // ── CHAT ENDPOINT ──
 app.post('/api/chat', async (req, res) => {
   if (!auth(req, res)) return;
