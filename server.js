@@ -317,6 +317,106 @@ app.post('/api/bulk-raw', async (req, res) => {
   res.json({ ok: true, added, skipped, total: DB.library.length });
 });
 
+// ── BATCH RE-ANALYZE ──
+app.post('/api/reanalyze-batch', async (req, res) => {
+  if (!auth(req, res)) return;
+  const batchSize = parseInt(req.query.n) || 20;
+
+  // Берём записи без анализа
+  const pending = DB.library.filter(e => !e.analyzedAt).slice(0, batchSize);
+  if (!pending.length) return res.json({ ok: true, processed: 0, remaining: 0 });
+
+  const BATCH = 5; // по 5 за вызов Claude
+  let processed = 0;
+
+  for (let i = 0; i < pending.length; i += BATCH) {
+    const chunk = pending.slice(i, i + BATCH);
+    const numbered = chunk.map((e, j) => `${j+1}. [${e.sourceType||'text'}] ${e.text||e.title||''}`).join('\n\n');
+
+    const prompt = `Проанализируй ${chunk.length} коротких записей из личного дневника Дмитрия. Это его твиты, тредсы, заметки.
+
+${numbered}
+
+Верни JSON массив из ${chunk.length} объектов (строго по порядку):
+[{
+  "rubric": "idea|dream|task|thought|resentment|admiration|quote|media|context",
+  "title": "до 70 символов",
+  "body": "суть 1-3 предложения",
+  "type": "belief|question|shifting|tension|abandoned",
+  "domain": "love|mind|society|self|work|other",
+  "emotion": "",
+  "priority": "high|medium|low",
+  "tags": ["тег1","тег2"]
+}]
+
+РУБРИКИ: idea=убеждение/философия, dream=сон, task=конкретная задача/план сделать, thought=рассуждение, resentment=обида/раздражение, admiration=восхищение, quote=чужое+комментарий, media=книга/фильм/подкаст, context=бытовое
+Для task: priority обязателен. Для idea: type и domain обязательны.
+Отвечай ТОЛЬКО JSON массивом.`;
+
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-haiku-4-20250514', max_tokens: 1200, messages: [{ role: 'user', content: prompt }] })
+      });
+      const data = await r.json();
+      const raw = data.content?.map(c => c.text || '').join('') || '[]';
+      const results = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+      chunk.forEach((entry, j) => {
+        const result = Array.isArray(results) ? results[j] : null;
+        if (!result) return;
+        // Обновляем запись в library
+        const idx = DB.library.findIndex(e => e.id === entry.id);
+        if (idx === -1) return;
+        DB.library[idx] = {
+          ...DB.library[idx],
+          rubric: result.rubric || 'thought',
+          title: result.title || entry.title,
+          body: result.body || entry.body,
+          emotion: result.emotion || '',
+          priority: result.priority || '',
+          tags: result.tags || [],
+          analyzedAt: new Date().toISOString(),
+        };
+        // Если идея — добавляем в cards
+        if (result.rubric === 'idea') {
+          const exists = DB.cards.find(c => c.libId === entry.id);
+          if (!exists) {
+            const dateShort = new Date(entry.id).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+            DB.cards.unshift({
+              title: result.title, body: result.body,
+              type: result.type || 'belief', domain: result.domain || 'other',
+              was: '', now: '', rubric: 'idea',
+              date: dateShort, libId: entry.id, addedAt: new Date().toISOString(),
+              tags: result.tags || [],
+            });
+          }
+        }
+        processed++;
+      });
+    } catch (e) {
+      console.error('reanalyze chunk error:', e.message);
+    }
+  }
+
+  save(DB);
+  const remaining = DB.library.filter(e => !e.analyzedAt).length;
+  res.json({ ok: true, processed, remaining });
+});
+
+// ── MANUAL RECLASSIFY ──
+app.put('/api/library/:idx/rubric', (req, res) => {
+  if (!auth(req, res)) return;
+  const idx = parseInt(req.params.idx);
+  if (idx < 0 || idx >= DB.library.length) return res.status(404).json({ error: 'not found' });
+  const { rubric } = req.body;
+  DB.library[idx].rubric = rubric;
+  DB.library[idx].analyzedAt = new Date().toISOString();
+  save(DB);
+  res.json({ ok: true });
+});
+
 // ── CHAT ENDPOINT ──
 app.post('/api/chat', async (req, res) => {
   if (!auth(req, res)) return;
