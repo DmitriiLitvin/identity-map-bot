@@ -350,7 +350,7 @@ app.post('/api/reanalyze-batch', async (req, res) => {
   const batchSize = parseInt(req.query.n) || 20;
 
   // Берём записи без анализа
-  const pending = DB.library.filter(e => !e.analyzedAt).slice(0, batchSize);
+  const pending = DB.library.filter(e => !e.analyzedAt || e.analyzedAt === 'null').slice(0, batchSize);
   if (!pending.length) return res.json({ ok: true, processed: 0, remaining: 0 });
 
   const BATCH = 5; // по 5 за вызов Claude
