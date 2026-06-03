@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карта личности</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
+  --surface:#1e2230;--surface2:#242840;--surface3:#2a2f45;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#7c6af5;--accent2:#a78bfa;--accent-glow:rgba(124,106,245,0.25);
+  --green:#34d399;--red:#f87171;--yellow:#fbbf24;--blue:#60a5fa;--pink:#f472b6;--orange:#fb923c;
+  --text:#e8eaf0;--text-soft:#9399b2;--text-muted:#565d7a;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);--shadow-card:0 2px 12px rgba(0,0,0,0.3);
+  --r:10px;--r-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh;font-size:14px;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+
+header{background:linear-gradient(135deg,#1a1040 0%,#0d0f1a 60%,#0d1520 100%);border-bottom:1px solid var(--border);padding:1.4rem 2.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;}
+header h1{font-size:1.5rem;font-weight:700;letter-spacing:-0.03em;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hsub{font-size:0.78rem;color:var(--text-muted);margin-top:0.15rem;font-weight:400;}
+.srv-indicator{display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+.srv-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:all 0.3s;}
+.srv-dot.online{background:var(--green);box-shadow:0 0 8px var(--green);}
+.srv-dot.syncing{background:var(--yellow);animation:pulse 1s infinite;box-shadow:0 0 8px var(--yellow);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 2rem;overflow-x:auto;scrollbar-width:none;gap:0.1rem;}
+nav::-webkit-scrollbar{display:none;}
+nav button{background:none;border:none;border-bottom:2px solid transparent;padding:0.75rem 0.95rem;font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:500;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all 0.2s;letter-spacing:0.01em;}
+nav button:hover{color:var(--text);}
+nav button.active{color:var(--accent2);border-bottom-color:var(--accent);font-weight:600;}
+
+main{max-width:1200px;margin:0 auto;padding:1.8rem 2.5rem 4rem;}
+.section{display:none;}.section.visible{display:block;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);}
+.sec-head h2{font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;}
+.sec-head p{font-size:0.78rem;color:var(--text-muted);max-width:36ch;text-align:right;line-height:1.5;}
+.toolbar{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1.2rem;}
+
+.btn{display:inline-flex;align-items:center;gap:0.35rem;background:var(--accent);color:#fff;border:none;padding:0.45rem 1rem;font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;border-radius:var(--r-sm);transition:all 0.2s;white-space:nowrap;letter-spacing:0.01em;}
+.btn:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 16px var(--accent-glow);}
+.btn.sec{background:var(--surface3);color:var(--text);}
+.btn.sec:hover{background:var(--surface2);}
+.btn.ghost{background:transparent;border:1px solid var(--border2);color:var(--text-soft);}
+.btn.ghost:hover{background:var(--surface);border-color:var(--accent);color:var(--text);}
+.btn.danger{background:#7f1d1d;color:#fca5a5;}
+.btn.danger:hover{background:#991b1b;}
+.btn:disabled{opacity:0.4;cursor:default;transform:none;}
+
+select.fil{font-family:'Inter',sans-serif;font-size:0.8rem;padding:0.4rem 0.7rem;border:1px solid var(--border2);background:var(--surface);border-radius:var(--r-sm);color:var(--text);cursor:pointer;outline:none;transition:border-color 0.2s;}
+select.fil:focus{border-color:var(--accent);}
+.empty{text-align:center;padding:3rem 2rem;color:var(--text-muted);}
+.empty p{margin-bottom:1.2rem;font-size:0.9rem;}
+
+/* IDEAS */
+.ideas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;}
+.idea-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem 0.9rem;position:relative;transition:all 0.2s;overflow:hidden;}
+.idea-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:var(--r) 0 0 var(--r);}
+.idea-card:hover{box-shadow:var(--shadow-card);border-color:var(--border2);transform:translateY(-2px);}
+.idea-card[data-type=belief]::before{background:#f87171;}
+.idea-card[data-type=question]::before{background:#60a5fa;}
+.idea-card[data-type=shifting]::before{background:#fbbf24;}
+.idea-card[data-type=tension]::before{background:#a78bfa;}
+.idea-card[data-type=abandoned]::before{background:var(--text-muted);}
+.idea-card[data-type=abandoned]{opacity:0.5;}
+.idea-card[data-type=abandoned] .ctitle{text-decoration:line-through;color:var(--text-muted);}
+.ctop{display:flex;align-items:flex-start;justify-content:space-between;gap:0.4rem;margin-bottom:0.55rem;}
+.tbadge{font-size:0.67rem;white-space:nowrap;flex-shrink:0;padding:0.18rem 0.55rem;border-radius:20px;font-family:'JetBrains Mono',monospace;font-weight:500;}
+.tbadge.belief{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.3);}
+.tbadge.question{background:rgba(96,165,250,0.15);color:#93c5fd;border:1px solid rgba(96,165,250,0.3);}
+.tbadge.shifting{background:rgba(251,191,36,0.15);color:#fde68a;border:1px solid rgba(251,191,36,0.3);}
+.tbadge.tension{background:rgba(167,139,250,0.15);color:#c4b5fd;border:1px solid rgba(167,139,250,0.3);}
+.tbadge.abandoned{background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.2);}
+.cdom{font-size:0.67rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);}
+.ctitle{font-size:0.97rem;font-weight:600;line-height:1.4;margin-bottom:0.4rem;color:var(--text);}
+.cbody{font-size:0.83rem;line-height:1.65;color:var(--text-soft);}
+.dyn{margin-top:0.7rem;padding:0.5rem 0.75rem;background:rgba(124,106,245,0.08);border-radius:var(--r-sm);border-left:2px solid var(--accent);}
+.dynl{font-size:0.63rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.28rem;}
+.dynr{display:flex;align-items:flex-start;gap:0.4rem;font-size:0.82rem;line-height:1.5;}
+.dwas{color:var(--text-muted);font-style:italic;flex:1;}
+.darr{color:var(--accent2);flex-shrink:0;}
+.dnow{color:var(--text-soft);flex:1;}
+.cfoot{margin-top:0.7rem;padding-top:0.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.cdate{font-size:0.67rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+.cacts{display:flex;gap:0.25rem;opacity:0;transition:opacity 0.2s;}
+.idea-card:hover .cacts{opacity:1;}
+.cacts button{background:none;border:none;cursor:pointer;font-size:0.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);padding:0.15rem 0.4rem;border-radius:4px;transition:all 0.15s;}
+.cacts button:hover{color:var(--text);background:var(--surface3);}
+.cacts .del:hover{color:var(--red);background:rgba(248,113,113,0.1);}
+
+/* RIVER */
+#river-canvas{width:100%;cursor:grab;display:block;}
+#river-canvas:active{cursor:grabbing;}
+.river-wrap{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);}
+.river-tooltip{position:absolute;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:0.55rem 0.8rem;border-radius:var(--r-sm);font-size:0.78rem;max-width:220px;line-height:1.5;pointer-events:none;display:none;z-index:10;box-shadow:var(--shadow);}
+.river-legend{display:flex;flex-wrap:wrap;gap:0.65rem;margin-bottom:0.9rem;font-size:0.7rem;font-family:'JetBrains Mono',monospace;}
+.rleg{display:flex;align-items:center;gap:0.35rem;color:var(--text-soft);}
+.rleg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* TIMELINE */
+.tl{position:relative;padding-left:2rem;}
+.tl::before{content:'';position:absolute;left:0.5rem;top:0.5rem;bottom:0;width:1px;background:var(--border);}
+.tli{position:relative;margin-bottom:1.2rem;padding:0.9rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);transition:all 0.2s;}
+.tli:hover{border-color:var(--border2);}
+.tli::before{content:'';position:absolute;left:-1.6rem;top:1.2rem;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 8px var(--accent-glow);}
+.tdate{font-size:0.67rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;}
+.ttitle{font-size:1rem;font-weight:600;margin-bottom:0.28rem;}
+.tdesc{font-size:0.83rem;line-height:1.65;color:var(--text-soft);}
+.ttags{margin-top:0.55rem;display:flex;flex-wrap:wrap;gap:0.3rem;}
+.ttag{font-size:0.67rem;font-family:'JetBrains Mono',monospace;padding:0.15rem 0.5rem;border:1px solid var(--border2);border-radius:20px;color:var(--text-soft);background:var(--surface3);}
+
+/* OVERVIEW */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.8rem;margin-bottom:2rem;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem;text-align:center;}
+.statn{font-size:2rem;font-weight:700;line-height:1;margin-bottom:0.25rem;background:linear-gradient(135deg,var(--accent2),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.statl{font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;}
+.ovrsub{font-size:0.65rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin:1.4rem 0 0.75rem;}
+.tbrow{display:flex;align-items:center;gap:0.85rem;margin-bottom:0.55rem;}
+.tblabel{width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-soft);}
+.tbtrack{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.tbfill{height:100%;border-radius:3px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);}
+.tbcount{font-size:0.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);width:22px;text-align:right;}
+
+/* SNAPSHOT */
+.snap-intro{background:linear-gradient(135deg,rgba(124,106,245,0.1),rgba(96,165,250,0.05));border:1px solid rgba(124,106,245,0.25);border-radius:var(--r);padding:1.2rem 1.5rem;margin-bottom:1.4rem;font-size:0.95rem;line-height:1.75;color:var(--text-soft);font-style:italic;}
+.blist{list-style:none;counter-reset:bl;}
+.blist li{counter-increment:bl;display:flex;gap:0.9rem;margin-bottom:0.7rem;padding:0.8rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);align-items:flex-start;transition:border-color 0.2s;}
+.blist li:hover{border-color:var(--border2);}
+.blist li::before{content:counter(bl,decimal-leading-zero);font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;flex-shrink:0;width:20px;}
+.blbody{flex:1;}
+.blbody strong{font-weight:600;display:block;margin-bottom:0.2rem;}
+.blbody span{font-size:0.82rem;color:var(--text-muted);}
+.bldel{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0.1rem 0.2rem;flex-shrink:0;transition:color 0.15s;}
+.bldel:hover{color:var(--red);}
+
+/* LIBRARY */
+.lib-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:0.9rem 1rem;margin-bottom:0.6rem;transition:border-color 0.2s;}
+.lib-entry:hover{border-color:var(--border2);}
+.lib-entry[data-src=voice]{border-left:3px solid var(--blue);}
+.lib-entry[data-src=forward]{border-left:3px solid var(--yellow);}
+.lib-entry[data-src=import]{border-left:3px solid var(--green);}
+.lib-entry[data-src=twitter]{border-left:3px solid #1d9bf0;}
+.lib-entry[data-src=twitter-reply]{border-left:3px solid #60c4f0;}
+.lib-entry[data-src=threads]{border-left:3px solid var(--pink);}
+.lib-head{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem;flex-wrap:wrap;}
+.lib-rubric{font-size:0.65rem;font-family:'JetBrains Mono',monospace;padding:0.15rem 0.5rem;border-radius:20px;font-weight:500;}
+.lib-rubric.idea{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.25);}
+.lib-rubric.thought{background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);}
+.lib-rubric.dream{background:rgba(96,165,250,0.15);color:#93c5fd;border:1px solid rgba(96,165,250,0.25);}
+.lib-rubric.task{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25);}
+.lib-rubric.resentment{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.2);}
+.lib-rubric.admiration{background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.2);}
+.lib-rubric.quote{background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid rgba(167,139,250,0.2);}
+.lib-rubric.media{background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.2);}
+.lib-rubric.context{background:rgba(100,116,139,0.12);color:#64748b;border:1px solid rgba(100,116,139,0.2);}
+.lib-src{font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+.lib-date{font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-left:auto;}
+.lib-title{font-size:0.9rem;font-weight:600;margin-bottom:0.25rem;color:var(--text);}
+.lib-text{font-size:0.83rem;line-height:1.65;color:var(--text-soft);white-space:pre-wrap;}
+.lib-text.clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.lib-toggle{background:none;border:none;cursor:pointer;font-size:0.7rem;font-family:'JetBrains Mono',monospace;color:var(--accent2);padding:0.18rem 0;display:block;margin-top:0.25rem;}
+.lib-rubric-sel{font-size:0.7rem;font-family:'JetBrains Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:4px;color:var(--text-soft);padding:0.15rem 0.35rem;cursor:pointer;outline:none;transition:border-color 0.2s;}
+.lib-rubric-sel:hover{border-color:var(--accent);}
+
+/* RUBRIC CARDS */
+.rub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:0.9rem;}
+.rub-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:0.95rem 1.1rem;transition:all 0.2s;}
+.rub-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.rub-card.dream{border-top:2px solid var(--blue);}
+.rub-card.task{border-top:2px solid var(--green);}
+.rub-card.task.hi{border-top-color:var(--red);}
+.rub-card.thought{border-top:2px solid var(--text-muted);}
+.rub-card.admiration{border-top:2px solid var(--yellow);}
+.rub-card.resentment{border-top:2px solid var(--red);}
+.rub-card.media{border-top:2px solid var(--orange);}
+.rub-title{font-size:0.95rem;font-weight:600;margin-bottom:0.3rem;line-height:1.4;}
+.rub-body{font-size:0.82rem;line-height:1.65;color:var(--text-soft);}
+.rub-meta{margin-top:0.55rem;font-size:0.67rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);display:flex;gap:0.8rem;flex-wrap:wrap;}
+.rub-emotion{font-style:italic;color:var(--accent2);margin-top:0.28rem;font-size:0.82rem;}
+.priority-badge{font-size:0.65rem;font-family:'JetBrains Mono',monospace;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(248,113,113,0.15);color:var(--red);border:1px solid rgba(248,113,113,0.3);}
+
+/* TASK DONE */
+.task-done-toggle{display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-bottom:0.4rem;}
+.task-checkbox{width:17px;height:17px;border:1.5px solid var(--accent);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.task-checkbox.checked{background:var(--accent);border-color:var(--accent);}
+.task-checkbox.checked::after{content:'✓';color:#fff;font-size:11px;line-height:1;}
+.rub-card.done-card{opacity:0.4;}
+.rub-card.done-card .rub-title{text-decoration:line-through;color:var(--text-muted);}
+.done-section-label{font-size:0.65rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin:1.4rem 0 0.7rem;padding-top:0.9rem;border-top:1px solid var(--border);}
+
+/* CHAT */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 230px);min-height:400px;}
+.chat-messages{flex:1;overflow-y:auto;padding:0.5rem 0;display:flex;flex-direction:column;gap:0.8rem;}
+.chat-msg{max-width:84%;line-height:1.65;font-size:0.88rem;}
+.chat-msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--accent),#5b50e0);color:#fff;padding:0.65rem 1rem;border-radius:14px 14px 3px 14px;box-shadow:0 4px 16px var(--accent-glow);}
+.chat-msg.assistant{align-self:flex-start;background:var(--surface);border:1px solid var(--border);padding:0.65rem 1rem;border-radius:14px 14px 14px 3px;white-space:pre-wrap;color:var(--text);}
+.chat-msg.assistant .chat-src{font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-top:0.4rem;}
+.chat-input-row{display:flex;gap:0.5rem;padding-top:0.9rem;border-top:1px solid var(--border);margin-top:0.5rem;}
+.chat-input-row textarea{flex:1;resize:none;height:56px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-sm);padding:0.6rem 0.8rem;font-family:'Inter',sans-serif;font-size:0.9rem;color:var(--text);outline:none;transition:border-color 0.2s;line-height:1.5;}
+.chat-input-row textarea:focus{border-color:var(--accent);}
+.chat-send{align-self:flex-end;padding:0.55rem 1.3rem;font-size:1rem;}
+.chat-empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);}
+.chat-history-bar{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.75rem;}
+.chat-hist-chip{font-size:0.7rem;font-family:'JetBrains Mono',monospace;padding:0.22rem 0.65rem;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--text-soft);cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.chat-hist-chip:hover{border-color:var(--accent);color:var(--accent2);}
+
+/* ANALYZE BANNER */
+.analyze-banner{background:linear-gradient(135deg,rgba(124,106,245,0.12),rgba(96,165,250,0.08));border:1px solid rgba(124,106,245,0.3);border-radius:var(--r);padding:1rem 1.3rem;margin-bottom:1.2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.analyze-banner p{font-size:0.85rem;color:var(--text-soft);line-height:1.5;}
+.analyze-banner strong{color:var(--text);display:block;margin-bottom:0.2rem;font-size:0.95rem;}
+.analyze-progress{font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--accent2);margin-top:0.3rem;}
+
+/* SETTINGS / SERVER PANEL */
+.srv-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.3rem 1.5rem;margin-bottom:1.2rem;}
+.srv-panel h3{font-size:1rem;font-weight:600;margin-bottom:0.9rem;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.field-row{display:flex;gap:0.5rem;margin-bottom:0.6rem;flex-wrap:wrap;}
+.field-row input{flex:1;min-width:160px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:0.48rem 0.75rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--text);outline:none;transition:border-color 0.2s;}
+.field-row input:focus{border-color:var(--accent);}
+.status-msg{font-size:0.75rem;font-family:'JetBrains Mono',monospace;padding:0.4rem 0.65rem;border-radius:var(--r-sm);display:none;margin-top:0.4rem;}
+.status-msg.ok{background:rgba(52,211,153,0.1);color:var(--green);border:1px solid rgba(52,211,153,0.2);display:block;}
+.status-msg.err{background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.2);display:block;}
+.tg-steps{counter-reset:ts;margin-bottom:1rem;}
+.tg-step{counter-increment:ts;display:flex;gap:0.8rem;margin-bottom:0.6rem;font-size:0.85rem;line-height:1.6;color:var(--text-soft);}
+.tg-step::before{content:counter(ts);font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#fff;background:var(--accent);width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:0.18rem;}
+.tg-step code{background:var(--surface3);padding:0.08rem 0.35rem;border-radius:4px;font-size:0.8rem;font-family:'JetBrains Mono',monospace;color:var(--accent2);}
+
+/* IMPORT */
+.import-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.3rem 1.5rem;margin-bottom:1.2rem;}
+.import-panel h3{font-size:1rem;font-weight:600;margin-bottom:0.75rem;}
+.drop-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:2rem;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:0.75rem;}
+.drop-zone:hover{border-color:var(--accent);background:rgba(124,106,245,0.04);}
+.drop-zone p{color:var(--text-muted);font-size:0.9rem;}
+.progress-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:0.75rem;overflow:hidden;display:none;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--blue));border-radius:2px;transition:width 0.3s;}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:1rem;}
+.mo.open{display:flex;}
+.md{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:1.5rem 1.9rem;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow);}
+.md h3{font-size:1.1rem;font-weight:700;margin-bottom:1.1rem;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.fg{margin-bottom:0.9rem;}
+.fg label{display:block;font-size:0.65rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.3rem;}
+.fg input,.fg textarea,.fg select{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:0.5rem 0.75rem;font-family:'Inter',sans-serif;font-size:0.9rem;color:var(--text);outline:none;transition:border-color 0.2s;}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent);}
+.fg textarea{resize:vertical;min-height:65px;}
+.type-sel{display:flex;flex-wrap:wrap;gap:0.38rem;}
+.topt{padding:0.28rem 0.7rem;border:1px solid var(--border2);border-radius:20px;font-size:0.75rem;font-family:'JetBrains Mono',monospace;cursor:pointer;background:var(--surface);color:var(--text-soft);transition:all 0.15s;white-space:nowrap;}
+.topt:hover{border-color:var(--accent);color:var(--accent2);}
+.topt.sel{background:var(--accent);color:#fff;border-color:var(--accent);}
+.dyntog{font-size:0.8rem;color:var(--accent2);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;padding:0;margin-bottom:0.8rem;}
+.dynflds{display:none;}
+.dynflds.show{display:block;}
+.macts{display:flex;justify-content:flex-end;gap:0.55rem;margin-top:1.2rem;padding-top:0.8rem;border-top:1px solid var(--border);}
+.btncancel{background:none;border:1px solid var(--border2);padding:0.45rem 1rem;font-family:'Inter',sans-serif;font-size:0.85rem;cursor:pointer;border-radius:var(--r-sm);color:var(--text-soft);transition:all 0.2s;}
+.btncancel:hover{background:var(--surface3);}
+
+@media(max-width:640px){
+  header{padding:1.2rem 1rem 1rem;flex-direction:column;align-items:flex-start;}
+  main{padding:1.3rem 1rem 3rem;}
+  nav{padding:0 1rem;}
+  .sec-head{flex-direction:column;gap:0.4rem;}
+  .sec-head p{text-align:left;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Карта личности</h1>
+    <div class="hsub">идеи, которые меня формируют</div>
+  </div>
+  <div class="srv-indicator">
+    <div class="srv-dot" id="srv-dot"></div>
+    <span id="srv-label" style="color:#9a9390">не подключено</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" data-tab="ideas">Идеи</button>
+  <button data-tab="river">Река</button>
+  <button data-tab="timeline">Хронология</button>
+  <button data-tab="overview">Обзор</button>
+  <button data-tab="snapshot">Снимок</button>
+  <button data-tab="library">📚 Библиотека</button>
+  <button data-tab="dreams">🌙 Сны</button>
+  <button data-tab="tasks">🎯 Задачи</button>
+  <button data-tab="thoughts">💭 Мысли</button>
+  <button data-tab="feelings">✨😤 Эмоции</button>
+  <button data-tab="media">📖 Медиа</button>
+  <button data-tab="chat">💬 Чат</button>
+  <button data-tab="settings">⚙ Настройки</button>
+</nav>
+
+<main>
+
+<!-- IDEAS -->
+<div class="section visible" id="tab-ideas">
+  <div class="sec-head"><h2>Идеи &amp; убеждения</h2><p>из карты личности</p></div>
+  <div class="toolbar">
+    <button class="btn" id="btn-add-idea">+ добавить</button>
+    <select class="fil" id="filter-type">
+      <option value="all">все типы</option>
+      <option value="belief">🔥 убеждение</option>
+      <option value="question">❓ открытый вопрос</option>
+      <option value="shifting">🔄 в движении</option>
+      <option value="tension">⚡ противоречие</option>
+      <option value="abandoned">💀 отказался</option>
+    </select>
+    <select class="fil" id="filter-domain">
+      <option value="all">все области</option>
+      <option value="love">любовь</option>
+      <option value="mind">мышление</option>
+      <option value="society">общество</option>
+      <option value="self">я сам</option>
+      <option value="work">работа</option>
+      <option value="other">другое</option>
+    </select>
+    <button class="btn ghost" id="btn-sync-ideas" title="синхронизировать с сервера">↓ обновить</button>
+  </div>
+  <div class="ideas-grid" id="ideas-grid"></div>
+</div>
+
+<!-- RIVER -->
+<div class="section" id="tab-river">
+  <div class="sec-head"><h2>Река идей</h2><p>движение и связи во времени</p></div>
+  <div class="river-legend" id="river-legend"></div>
+  <div class="river-wrap" id="river-wrap"><canvas id="river-canvas"></canvas><div class="river-tooltip" id="river-tooltip"></div></div>
+  <p style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);margin-top:0.65rem;">← → тащи для прокрутки · наводи на точку</p>
+</div>
+
+<!-- TIMELINE -->
+<div class="section" id="tab-timeline">
+  <div class="sec-head"><h2>Хронология</h2><p>решения и события</p></div>
+  <div class="toolbar"><button class="btn" id="btn-add-event">+ событие</button></div>
+  <div class="tl" id="timeline-list"></div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="section" id="tab-overview">
+  <div class="sec-head"><h2>Обзор</h2><p>паттерны карты</p></div>
+  <div class="stats-row" id="stats-row"></div>
+  <div class="ovrsub">по типу идей</div><div id="type-bars"></div>
+  <div class="ovrsub">по области</div><div id="domain-bars"></div>
+  <div class="ovrsub">библиотека по рубрикам</div><div id="rubric-bars"></div>
+</div>
+
+<!-- SNAPSHOT -->
+<div class="section" id="tab-snapshot">
+  <div class="sec-head"><h2>Снимок «сейчас»</h2><p>кто ты в этот момент</p></div>
+  <div class="snap-intro" id="snap-intro-el">Это живой документ. Кто ты прямо сейчас.</div>
+  <div class="toolbar">
+    <button class="btn" id="btn-add-belief">+ убеждение</button>
+    <button class="btn sec" id="btn-edit-intro">✎ вступление</button>
+  </div>
+  <ul class="blist" id="beliefs-list"></ul>
+</div>
+
+<!-- LIBRARY -->
+<div class="section" id="tab-library">
+  <div class="sec-head"><h2>📚 Библиотека</h2><p>все записи в оригинале</p></div>
+  <div id="analyze-banner" class="analyze-banner" style="display:none">
+    <div>
+      <strong>Нужна умная сортировка</strong>
+      <p>Записи без анализа попали в «мысли» автоматически. Claude разберёт каждую по контексту.</p>
+      <div class="analyze-progress" id="analyze-progress-text"></div>
+    </div>
+    <button class="btn" id="btn-reanalyze">✦ Проанализировать</button>
+  </div>
+  <div class="toolbar">
+    <select class="fil" id="lib-rub"><option value="all">все рубрики</option><option value="idea">🔥 идеи</option><option value="dream">🌙 сны</option><option value="task">🎯 задачи</option><option value="thought">💭 мысли</option><option value="resentment">😤 обиды</option><option value="admiration">✨ восхищения</option><option value="quote">💬 цитаты</option><option value="media">📖 медиа</option><option value="context">🌀 контекст</option></select>
+    <select class="fil" id="lib-src"><option value="all">все форматы</option><option value="text">текст</option><option value="voice">🎙 аудио</option><option value="forward">📎 пересланное</option><option value="twitter">Twitter</option><option value="twitter-reply">Twitter ответы</option><option value="threads">Threads</option><option value="import">📥 импорт</option></select>
+    <button class="btn ghost" id="btn-sync-lib">↓ обновить</button>
+  </div>
+  <div id="library-list"></div>
+</div>
+
+<!-- DREAMS -->
+<div class="section" id="tab-dreams">
+  <div class="sec-head"><h2>🌙 Сны</h2><p>образы и эмоции</p></div>
+  <div class="toolbar"><button class="btn ghost" id="btn-sync-dreams">↓ обновить</button></div>
+  <div class="rub-grid" id="dreams-grid"></div>
+</div>
+
+<!-- TASKS -->
+<div class="section" id="tab-tasks">
+  <div class="sec-head"><h2>🎯 Задачи</h2><p>конкретные действия</p></div>
+  <div class="toolbar">
+    <select class="fil" id="task-filter"><option value="all">все</option><option value="high">🔴 срочные</option><option value="other">остальные</option></select>
+    <button class="btn ghost" id="btn-sync-tasks">↓ обновить</button>
+  </div>
+  <div class="rub-grid" id="tasks-grid"></div>
+</div>
+
+<!-- THOUGHTS -->
+<div class="section" id="tab-thoughts">
+  <div class="sec-head"><h2>💭 Мысли вслух</h2><p>незавершённые, рассуждения</p></div>
+  <div class="toolbar"><button class="btn ghost" id="btn-sync-thoughts">↓ обновить</button></div>
+  <div class="rub-grid" id="thoughts-grid"></div>
+</div>
+
+<!-- FEELINGS -->
+<div class="section" id="tab-feelings">
+  <div class="sec-head"><h2>Эмоции</h2><p>обиды, восхищения, цитаты</p></div>
+  <div class="toolbar">
+    <button class="btn" onclick="setFeel('admiration')">✨ Восхищения</button>
+    <button class="btn sec" onclick="setFeel('resentment')">😤 Обиды</button>
+    <button class="btn sec" onclick="setFeel('quote')">💬 Цитаты</button>
+    <button class="btn ghost" id="btn-sync-feel">↓ обновить</button>
+  </div>
+  <div class="rub-grid" id="feelings-grid"></div>
+</div>
+
+<!-- MEDIA -->
+<div class="section" id="tab-media">
+  <div class="sec-head"><h2>📖 Медиа</h2><p>книги, фильмы, подкасты</p></div>
+  <div class="toolbar"><button class="btn ghost" id="btn-sync-media">↓ обновить</button></div>
+  <div class="rub-grid" id="media-grid"></div>
+</div>
+
+<!-- CHAT -->
+<div class="section" id="tab-chat">
+  <div class="sec-head"><h2>💬 Чат</h2><p>спроси что ты думаешь о чём угодно</p></div>
+  <div class="chat-history-bar" id="chat-hist-bar"></div>
+  <div class="chat-wrap">
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-empty" id="chat-empty">Спроси что угодно о своих записях.<br>Например: «что я думаю о математике?» или «какие у меня задачи?»</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" placeholder="Напиши вопрос..."></textarea>
+      <button class="btn chat-send" id="chat-send-btn">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="section" id="tab-settings">
+  <div class="sec-head"><h2>⚙ Настройки</h2><p>подключение и импорт</p></div>
+
+  <div class="srv-panel">
+    <h3>Сервер</h3>
+    <div class="field-row">
+      <input type="text" id="srv-url" placeholder="https://identity-map-bot.onrender.com">
+      <input type="password" id="srv-secret" placeholder="API_SECRET">
+      <button class="btn" id="btn-srv-save">сохранить</button>
+    </div>
+    <div class="toolbar" style="margin-bottom:0;">
+      <button class="btn" id="btn-srv-pull">↓ загрузить с сервера</button>
+      <button class="btn sec" id="btn-srv-push">↑ отправить на сервер</button>
+    </div>
+    <div class="status-msg" id="srv-status"></div>
+  </div>
+
+  <div class="srv-panel">
+    <h3>Telegram бот</h3>
+    <div class="tg-steps">
+      <div class="tg-step">Найди <code>@BotFather</code> → <code>/newbot</code> → получи токен</div>
+      <div class="tg-step">Напиши боту любое сообщение чтобы активировать</div>
+      <div class="tg-step">Вставь токен в настройках сервера на Render как <code>TELEGRAM_TOKEN</code></div>
+    </div>
+    <p style="font-size:0.85rem;color:var(--ink-soft);font-style:italic;">Бот принимает: текст, голосовые 🎙, пересланное с комментарием, фото с подписью</p>
+  </div>
+
+  <div class="import-panel">
+    <h3>Импорт (Notion, файлы, текст)</h3>
+    <p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:0.75rem;">Выгрузи Notion как Markdown или Plain Text, перетащи файл сюда или вставь текст.</p>
+    <div class="drop-zone" id="drop-zone">
+      <p>Перетащи файл сюда<br><span style="font-size:0.78rem;">.txt .md .csv — или кликни для выбора</span></p>
+      <input type="file" id="import-file" accept=".txt,.md,.csv,.json" style="display:none;">
+    </div>
+    <div class="fg"><label>или вставь текст</label><textarea id="import-text" style="min-height:90px;" placeholder="Вставь любой текст — Claude разберёт по рубрикам"></textarea></div>
+    <div class="fg"><label>источник (необязательно)</label><input type="text" id="import-source" placeholder="Notion, книга, заметки..."></div>
+    <div class="toolbar" style="margin-bottom:0.5rem;"><button class="btn" id="btn-import">✦ импортировать</button></div>
+    <div class="progress-bar" id="import-progress"><div class="progress-fill" id="import-fill" style="width:0%"></div></div>
+    <div class="status-msg" id="import-status"></div>
+  </div>
+
+  <div class="srv-panel">
+    <h3>Прямой анализ через Claude</h3>
+    <div class="fg"><textarea id="manual-text" style="min-height:90px;" placeholder="Вставь мысль или заметку — Claude проанализирует и добавит в карту"></textarea></div>
+    <div class="toolbar" style="margin-bottom:0;"><button class="btn" id="btn-manual-analyze">✦ проанализировать</button></div>
+    <div class="status-msg" id="manual-status"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL: Idea -->
+<div class="mo" id="modal-idea">
+<div class="md">
+  <h3 id="midea-title">новая идея</h3>
+  <div class="fg"><label>тип</label>
+    <div class="type-sel" id="type-sel">
+      <span class="topt sel" data-v="belief">🔥 убеждение</span>
+      <span class="topt" data-v="question">❓ вопрос</span>
+      <span class="topt" data-v="shifting">🔄 меняется</span>
+      <span class="topt" data-v="tension">⚡ противоречие</span>
+      <span class="topt" data-v="abandoned">💀 отказался</span>
+    </div>
+  </div>
+  <div class="fg"><label>формулировка</label><input type="text" id="i-name"></div>
+  <div class="fg"><label>область</label>
+    <select id="i-domain"><option value="love">любовь</option><option value="mind">мышление</option><option value="society">общество</option><option value="self">я сам</option><option value="work">работа</option><option value="other">другое</option></select>
+  </div>
+  <div class="fg"><label>описание</label><textarea id="i-body"></textarea></div>
+  <button class="dyntog" id="dyn-toggle">+ динамика (было → стало)</button>
+  <div class="dynflds" id="dyn-fields">
+    <div class="fg"><label>как было</label><textarea id="i-was" style="min-height:50px;"></textarea></div>
+    <div class="fg"><label>как стало</label><textarea id="i-now" style="min-height:50px;"></textarea></div>
+  </div>
+  <div class="macts"><button class="btncancel" id="cidea">отмена</button><button class="btn" id="sidea">сохранить</button></div>
+</div>
+</div>
+
+<!-- MODAL: Event -->
+<div class="mo" id="modal-event">
+<div class="md">
+  <h3>событие / перемена</h3>
+  <div class="fg"><label>название</label><input type="text" id="e-title"></div>
+  <div class="fg"><label>дата</label><input type="text" id="e-date" placeholder="лето 2024…"></div>
+  <div class="fg"><label>что изменило</label><textarea id="e-desc"></textarea></div>
+  <div class="fg"><label>темы через запятую</label><input type="text" id="e-tags"></div>
+  <div class="macts"><button class="btncancel" id="cevent">отмена</button><button class="btn" id="sevent">сохранить</button></div>
+</div>
+</div>
+
+<!-- MODAL: Belief -->
+<div class="mo" id="modal-belief">
+<div class="md">
+  <h3>убеждение / ценность</h3>
+  <div class="fg"><label>формулировка</label><input type="text" id="b-title"></div>
+  <div class="fg"><label>источник</label><input type="text" id="b-src"></div>
+  <div class="macts"><button class="btncancel" id="cbelief">отмена</button><button class="btn" id="sbelief">сохранить</button></div>
+</div>
+</div>
+
+<!-- MODAL: Intro -->
+<div class="mo" id="modal-intro">
+<div class="md">
+  <h3>вступление</h3>
+  <div class="fg"><textarea id="intro-ta" style="min-height:120px;"></textarea></div>
+  <div class="macts"><button class="btncancel" id="cintro">отмена</button><button class="btn" id="sintro">сохранить</button></div>
+</div>
+</div>
+
+<script>
+const SK='idmap_v4';
+const SRV_URL_KEY='srv_url_v2';
+const SRV_SECRET_KEY='srv_secret_v2';
+const DEFAULT_SRV='https://identity-map-bot.onrender.com';
+
+const TYPE_META={belief:{label:'🔥 убеждение',color:'#c14b2a',bar:'#e8a080'},question:{label:'❓ открытый вопрос',color:'#3d5a7a',bar:'#80a8d0'},shifting:{label:'🔄 в движении',color:'#7a6533',bar:'#c8a840'},tension:{label:'⚡ противоречие',color:'#7a3d7a',bar:'#c080c0'},abandoned:{label:'💀 отказался',color:'#9a9390',bar:'#c0bcb8'}};
+const DOMAIN_META={love:{label:'любовь',color:'#c14b2a'},mind:{label:'мышление',color:'#3d5a7a'},society:{label:'общество',color:'#4a6741'},self:{label:'я сам',color:'#7a6533'},work:{label:'работа',color:'#7a3d7a'},other:{label:'другое',color:'#9a9390'}};
+const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'📖',context:'🌀'};
+const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Медиа',context:'Контекст'};
+const SRC_LABEL={text:'текст',voice:'🎙 аудио',forward:'📎 переслано',photo:'📷 фото',import:'📥 импорт'};
+
+function load(){try{return JSON.parse(localStorage.getItem(SK))||{ideas:[],events:[],beliefs:[],intro:null};}catch{return{ideas:[],events:[],beliefs:[],intro:null};}}
+function save(d){d.upd=new Date().toISOString();localStorage.setItem(SK,JSON.stringify(d));}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+let D=load();
+let SRV={url:localStorage.getItem(SRV_URL_KEY)||DEFAULT_SRV,secret:localStorage.getItem(SRV_SECRET_KEY)||''};
+
+const SRV_DATA_KEY='idmap_srvdata_v1';
+function loadSrvData(){try{return JSON.parse(localStorage.getItem(SRV_DATA_KEY))||{library:[],cards:[]};}catch{return{library:[],cards:[]};}}
+function saveSrvData(d){try{localStorage.setItem(SRV_DATA_KEY,JSON.stringify(d));}catch(e){console.warn('SrvData cache too large:',e);}}
+let SRV_DATA=loadSrvData();
+
+// init srv url fields
+document.getElementById('srv-url').value=SRV.url;
+
+// ── SERVER ──
+function setSrvStatus(ok,syncing){
+  const dot=document.getElementById('srv-dot');
+  const lbl=document.getElementById('srv-label');
+  if(syncing){dot.className='srv-dot syncing';lbl.textContent='синхронизирую...';lbl.style.color='#c49a6c';return;}
+  if(ok){dot.className='srv-dot online';lbl.textContent='подключено';lbl.style.color='#5a9a3a';}
+  else{dot.className='srv-dot';lbl.textContent='не подключено';lbl.style.color='#9a9390';}
+}
+
+async function srvFetch(path,opts={}){
+  const headers={'Content-Type':'application/json'};
+  if(SRV.secret)headers['Authorization']=`Bearer ${SRV.secret}`;
+  const r=await fetch(SRV.url+path,{headers,...opts});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function pullFromServer(silent=false){
+  if(!SRV.url)return;
+  setSrvStatus(false,true);
+  try{
+    const data=await srvFetch('/api/data');
+    // Merge library: новые записи с сервера добавляем к кешу, не заменяем весь кеш
+    const cached=SRV_DATA.library||[];
+    const cachedIds=new Set(cached.map(e=>e.id));
+    const incoming=data.library||[];
+    const newEntries=incoming.filter(e=>!cachedIds.has(e.id));
+    // объединяем: серверные записи приоритетнее, но кешированных не выбрасываем
+    const merged=[...incoming];
+    cached.forEach(e=>{if(!incoming.find(s=>s.id===e.id))merged.push(e);});
+    merged.sort((a,b)=>b.id-a.id);
+    data.library=merged;
+    SRV_DATA=data;
+    saveSrvData(SRV_DATA);
+    // merge idea-type cards into local ideas
+    if(data.cards){
+      const ideaCards=data.cards.filter(c=>c.rubric==='idea');
+      const existing=new Set(D.ideas.map(i=>i.name));
+      ideaCards.forEach(c=>{
+        if(!existing.has(c.title)){
+          D.ideas.unshift({name:c.title,type:c.type||'belief',domain:c.domain||'other',body:c.body||'',was:c.was||'',now:c.now||'',date:c.date||''});
+          existing.add(c.title);
+        }
+      });
+      save(D);
+    }
+    if(data.events){
+      const existEv=new Set(D.events.map(e=>e.title));
+      (data.events||[]).forEach(e=>{if(!existEv.has(e.title))D.events.unshift(e);});
+    }
+    if(data.beliefs){
+      const existB=new Set(D.beliefs.map(b=>b.title));
+      (data.beliefs||[]).forEach(b=>{if(!existB.has(b.title))D.beliefs.push(b);});
+    }
+    if(data.intro&&!D.intro)D.intro=data.intro;
+    save(D);
+    setSrvStatus(true,false);
+    if(!silent)showStatus('srv-status','✓ данные загружены','ok');
+    renderAll();
+  }catch(e){
+    setSrvStatus(false,false);
+    if(!silent)showStatus('srv-status','ошибка: '+e.message,'err');
+  }
+}
+
+function showStatus(id,msg,type){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=msg;
+  el.className='status-msg '+(type==='ok'?'ok':'err');
+  setTimeout(()=>{el.className='status-msg';},4000);
+}
+
+document.getElementById('btn-srv-save').onclick=()=>{
+  SRV.url=document.getElementById('srv-url').value.trim().replace(/\/+$/,'');
+  const s=document.getElementById('srv-secret').value.trim();
+  if(s)SRV.secret=s;
+  localStorage.setItem(SRV_URL_KEY,SRV.url);
+  if(s)localStorage.setItem(SRV_SECRET_KEY,SRV.secret);
+  showStatus('srv-status','✓ сохранено','ok');
+  pullFromServer();
+};
+
+document.getElementById('btn-srv-pull').onclick=()=>pullFromServer();
+['btn-sync-ideas','btn-sync-lib','btn-sync-dreams','btn-sync-tasks','btn-sync-thoughts','btn-sync-feel','btn-sync-media'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.onclick=()=>pullFromServer();
+});
+
+document.getElementById('btn-srv-push').onclick=async()=>{
+  try{
+    await srvFetch('/api/sync',{method:'POST',body:JSON.stringify({cards:D.ideas.map(i=>({...i,rubric:'idea',title:i.name})),events:D.events,beliefs:D.beliefs,intro:D.intro})});
+    showStatus('srv-status','✓ отправлено','ok');
+  }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+};
+
+// ── TABS ──
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('visible'));
+  b.classList.add('active');
+  const t=b.dataset.tab;
+  document.getElementById('tab-'+t).classList.add('visible');
+  if(t==='overview')renderOverview();
+  if(t==='river')renderRiver();
+  if(t==='library')renderLibrary();
+  if(t==='dreams')renderRubricGrid('dream','dreams-grid');
+  if(t==='tasks'){renderTasksWithDone();}
+  if(t==='chat'){renderChatMessages();renderChatHistoryChips();}
+  if(t==='thoughts')renderRubricGrid('thought','thoughts-grid');
+  if(t==='feelings')setFeel('admiration');
+  if(t==='media')renderRubricGrid('media','media-grid');
+}));
+
+// ── IDEAS ──
+function renderIdeas(){
+  const g=document.getElementById('ideas-grid');
+  const ft=document.getElementById('filter-type').value;
+  const fd=document.getElementById('filter-domain').value;
+  const items=D.ideas.filter(i=>(ft==='all'||i.type===ft)&&(fd==='all'||i.domain===fd));
+  if(!items.length){g.innerHTML='<div class="empty"><p>нет идей</p><button class="btn" onclick="openIdeaModal()">+ добавить</button></div>';return;}
+  g.innerHTML=items.map(idea=>{
+    const ri=D.ideas.indexOf(idea);
+    const tm=TYPE_META[idea.type]||TYPE_META.belief;
+    const hasDyn=idea.was||idea.now;
+    return`<div class="idea-card" data-type="${idea.type}">
+      <div class="ctop"><span class="tbadge ${idea.type}">${tm.label}</span><span class="cdom">${DOMAIN_META[idea.domain]?.label||''}</span></div>
+      <div class="ctitle">${esc(idea.name)}</div>
+      ${idea.body?`<div class="cbody">${esc(idea.body)}</div>`:''}
+      ${hasDyn?`<div class="dyn"><div class="dynl">динамика</div><div class="dynr">${idea.was?`<span class="dwas">${esc(idea.was)}</span>`:''} ${idea.was&&idea.now?'<span class="darr">→</span>':''} ${idea.now?`<span class="dnow">${esc(idea.now)}</span>`:''}</div></div>`:''}
+      <div class="cfoot"><span class="cdate">${idea.date||''}</span><div class="cacts"><button onclick="openIdeaModal(${ri})">ред.</button><button class="del" onclick="delIdea(${ri})">удал.</button></div></div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('filter-type').addEventListener('change',renderIdeas);
+document.getElementById('filter-domain').addEventListener('change',renderIdeas);
+
+let editIdx=null,selType='belief';
+function openIdeaModal(idx){
+  editIdx=idx!==undefined?idx:null;
+  const idea=idx!==undefined?D.ideas[idx]:null;
+  selType=idea?idea.type:'belief';
+  document.getElementById('midea-title').textContent=idea?'редактировать':'новая идея';
+  document.getElementById('i-name').value=idea?idea.name:'';
+  document.getElementById('i-domain').value=idea?(idea.domain||'other'):'other';
+  document.getElementById('i-body').value=idea?(idea.body||''):'';
+  document.getElementById('i-was').value=idea?(idea.was||''):'';
+  document.getElementById('i-now').value=idea?(idea.now||''):'';
+  const hasDyn=idea&&(idea.was||idea.now);
+  document.getElementById('dyn-fields').classList.toggle('show',!!hasDyn);
+  document.getElementById('dyn-toggle').textContent=hasDyn?'− скрыть динамику':'+ динамика (было → стало)';
+  document.querySelectorAll('#type-sel .topt').forEach(o=>o.classList.toggle('sel',o.dataset.v===selType));
+  document.getElementById('modal-idea').classList.add('open');
+}
+document.getElementById('btn-add-idea').onclick=()=>openIdeaModal();
+window.openIdeaModal=openIdeaModal;
+document.querySelectorAll('#type-sel .topt').forEach(o=>o.addEventListener('click',()=>{selType=o.dataset.v;document.querySelectorAll('#type-sel .topt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');}));
+let dynOpen=false;
+document.getElementById('dyn-toggle').onclick=()=>{dynOpen=!dynOpen;document.getElementById('dyn-fields').classList.toggle('show',dynOpen);document.getElementById('dyn-toggle').textContent=dynOpen?'− скрыть динамику':'+ динамика (было → стало)';};
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+['modal-idea','modal-event','modal-belief','modal-intro'].forEach(id=>{document.getElementById(id)?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal(id);});});
+document.getElementById('cidea').onclick=()=>closeModal('modal-idea');
+document.getElementById('sidea').onclick=()=>{
+  const name=document.getElementById('i-name').value.trim();if(!name)return;
+  const idea={name,type:selType,domain:document.getElementById('i-domain').value,body:document.getElementById('i-body').value.trim(),was:document.getElementById('i-was').value.trim(),now:document.getElementById('i-now').value.trim(),date:new Date().toLocaleDateString('ru-RU',{month:'short',year:'numeric'})};
+  if(editIdx!==null)D.ideas[editIdx]=idea;else D.ideas.unshift(idea);
+  save(D);closeModal('modal-idea');renderIdeas();
+};
+window.delIdea=(i)=>{if(!confirm('Удалить?'))return;D.ideas.splice(i,1);save(D);renderIdeas();};
+
+// ── RIVER ──
+function parseYear(str){if(!str)return null;const m=str.match(/(\d{4})/);if(m)return parseInt(m[1]);const mo={янв:0,фев:1,мар:2,апр:3,май:4,июн:5,июл:6,авг:7,сен:8,окт:9,ноя:10,дек:11};const lc=str.toLowerCase();for(const[k,v]of Object.entries(mo)){if(lc.includes(k)){const ym=lc.match(/\d{4}/);return ym?parseFloat(ym[0]+(v/12).toFixed(2)):null;}}return null;}
+
+function renderRiver(){
+  const wrap=document.getElementById('river-wrap');
+  const canvas=document.getElementById('river-canvas');
+  const tooltip=document.getElementById('river-tooltip');
+  const legend=document.getElementById('river-legend');
+  legend.innerHTML=Object.entries(DOMAIN_META).map(([k,m])=>`<div class="rleg"><div class="rleg-dot" style="background:${m.color}"></div><span>${m.label}</span></div>`).join('');
+  const ideas=D.ideas.filter(i=>i.date);
+  if(!ideas.length){canvas.height=60;const ctx=canvas.getContext('2d');ctx.fillStyle='#9a9390';ctx.font='13px Cormorant Garamond';ctx.fillText('нет идей с датами',20,35);return;}
+  const domains=Object.keys(DOMAIN_META);
+  const LANE=68,PT=38,PL=78,PR=38;
+  const CH=PT+domains.length*LANE+36;
+  const years=ideas.map(i=>parseYear(i.date)).filter(Boolean);
+  const minY=Math.min(...years)-0.5,maxY=Math.max(...years)+0.5;
+  const span=Math.max(maxY-minY,2);
+  const CW=Math.max(900,span*160+PL+PR);
+  wrap.style.height=CH+'px';canvas.width=CW;canvas.height=CH;canvas.style.height=CH+'px';
+  const ctx=canvas.getContext('2d');
+  function xY(y){return PL+(y-minY)/span*(CW-PL-PR);}
+  function yD(d){const i=domains.indexOf(d);return PT+(i<0?0:i)*LANE+LANE/2;}
+  ctx.fillStyle='#ede8de';ctx.fillRect(0,0,CW,CH);
+  for(let y=Math.ceil(minY);y<=Math.floor(maxY);y++){const x=xY(y);ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.strokeStyle='rgba(26,22,18,0.07)';ctx.lineWidth=1;ctx.stroke();ctx.font='10px JetBrains Mono';ctx.fillStyle='#9a9390';ctx.textAlign='center';ctx.fillText(y,x,CH-6);}
+  domains.forEach((d,i)=>{const y=PT+i*LANE+LANE/2;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(CW-PR,y);ctx.strokeStyle='rgba(26,22,18,0.09)';ctx.lineWidth=1;ctx.setLineDash([4,6]);ctx.stroke();ctx.setLineDash([]);ctx.font='10px JetBrains Mono';ctx.fillStyle='#9a9390';ctx.textAlign='right';ctx.fillText(DOMAIN_META[d].label,PL-6,y+4);});
+  const byD={};ideas.forEach(idea=>{const yr=parseYear(idea.date);if(!yr)return;if(!byD[idea.domain])byD[idea.domain]=[];byD[idea.domain].push({idea,yr});});
+  Object.entries(byD).forEach(([dom,pts])=>{if(pts.length<2)return;pts.sort((a,b)=>a.yr-b.yr);const col=DOMAIN_META[dom]?.color||'#9a9390';ctx.beginPath();pts.forEach((pt,i)=>{const x=xY(pt.yr),y=yD(dom);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.strokeStyle=col+'88';ctx.lineWidth=2;ctx.stroke();});
+  const nodes=[];
+  ideas.forEach(idea=>{const yr=parseYear(idea.date);if(!yr)return;const x=xY(yr),y=yD(idea.domain);const col=DOMAIN_META[idea.domain]?.color||'#9a9390';const r=idea.type==='abandoned'?5:7;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='#ede8de';ctx.lineWidth=2;ctx.stroke();nodes.push({x,y,r:r+4,idea,col});});
+  let isDrag=false,sx=0,sl=0;
+  wrap.style.overflowX='auto';wrap.style.overflowY='hidden';
+  canvas.onmousedown=e=>{isDrag=true;sx=e.pageX-wrap.offsetLeft;sl=wrap.scrollLeft;};
+  canvas.onmouseleave=()=>isDrag=false;
+  canvas.onmouseup=()=>isDrag=false;
+  canvas.onmousemove=e=>{
+    if(!isDrag){
+      const rect=canvas.getBoundingClientRect();const mx=e.clientX-rect.left+wrap.scrollLeft;const my=e.clientY-rect.top;
+      let hit=null;for(const n of nodes){if(Math.hypot(mx-n.x,my-n.y)<n.r+3){hit=n;break;}}
+      if(hit){tooltip.style.display='block';tooltip.style.left=(hit.x-wrap.scrollLeft+10)+'px';tooltip.style.top=(hit.y-16)+'px';const tm=TYPE_META[hit.idea.type];tooltip.innerHTML=`<strong>${esc(hit.idea.name)}</strong><br><span style="opacity:0.7;font-size:0.72rem">${tm?.label||''} · ${hit.idea.date||''}</span>${hit.idea.body?`<br><span style="opacity:0.8;font-size:0.78rem">${esc(hit.idea.body.slice(0,80))}…</span>`:''}`;}
+      else tooltip.style.display='none';return;
+    }
+    e.preventDefault();wrap.scrollLeft=sl-(e.pageX-wrap.offsetLeft-sx);
+  };
+}
+
+// ── TIMELINE ──
+function renderTimeline(){
+  const el=document.getElementById('timeline-list');
+  if(!D.events.length){el.innerHTML='<div class="empty"><p>хронология пуста</p></div>';return;}
+  el.innerHTML=D.events.map((ev,i)=>{
+    const tags=(ev.tags||'').split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<span class="ttag">${esc(t)}</span>`).join('');
+    return`<div class="tli"><div class="tdate">${esc(ev.date||'')}</div><div class="ttitle">${esc(ev.title)}</div>${ev.desc?`<div class="tdesc">${esc(ev.desc)}</div>`:''}${tags?`<div class="ttags">${tags}</div>`:''}<button style="margin-top:0.5rem;background:none;border:none;cursor:pointer;font-size:0.7rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);" onclick="delEvent(${i})">удалить</button></div>`;
+  }).join('');
+}
+document.getElementById('btn-add-event').onclick=()=>{['e-title','e-date','e-desc','e-tags'].forEach(id=>document.getElementById(id).value='');document.getElementById('modal-event').classList.add('open');};
+document.getElementById('cevent').onclick=()=>closeModal('modal-event');
+document.getElementById('sevent').onclick=()=>{const t=document.getElementById('e-title').value.trim();if(!t)return;D.events.unshift({title:t,date:document.getElementById('e-date').value.trim(),desc:document.getElementById('e-desc').value.trim(),tags:document.getElementById('e-tags').value.trim()});save(D);closeModal('modal-event');renderTimeline();};
+window.delEvent=(i)=>{if(!confirm('Удалить?'))return;D.events.splice(i,1);save(D);renderTimeline();};
+
+// ── OVERVIEW ──
+function renderOverview(){
+  document.getElementById('stats-row').innerHTML=[
+    [D.ideas.length,'идей'],[D.ideas.filter(i=>i.type==='abandoned').length,'отказался'],
+    [D.ideas.filter(i=>i.was||i.now).length,'с динамикой'],[D.events.length,'событий'],
+    [SRV_DATA.library?.length||0,'в библиотеке'],
+  ].map(([n,l])=>`<div class="stat-card"><div class="statn">${n}</div><div class="statl">${l}</div></div>`).join('');
+  const tc={};D.ideas.forEach(i=>tc[i.type]=(tc[i.type]||0)+1);
+  const tmax=Math.max(1,...Object.values(tc));
+  document.getElementById('type-bars').innerHTML=Object.entries(TYPE_META).map(([k,m])=>{const c=tc[k]||0;return`<div class="tbrow"><span class="tblabel">${m.label}</span><div class="tbtrack"><div class="tbfill" style="width:${Math.round(c/tmax*100)}%;background:${m.bar}"></div></div><span class="tbcount">${c}</span></div>`;}).join('');
+  const dc={};D.ideas.forEach(i=>dc[i.domain]=(dc[i.domain]||0)+1);
+  const dmax=Math.max(1,...Object.values(dc));
+  document.getElementById('domain-bars').innerHTML=Object.entries(DOMAIN_META).map(([k,m])=>{const c=dc[k]||0;return`<div class="tbrow"><span class="tblabel">${m.label}</span><div class="tbtrack"><div class="tbfill" style="width:${Math.round(c/dmax*100)}%;background:${m.color}88"></div></div><span class="tbcount">${c}</span></div>`;}).join('');
+  const rc={};(SRV_DATA.library||[]).forEach(e=>rc[e.rubric]=(rc[e.rubric]||0)+1);
+  const rmax=Math.max(1,...Object.values(rc));
+  document.getElementById('rubric-bars').innerHTML=Object.entries(R_EMOJI).map(([k,e])=>{const c=rc[k]||0;return`<div class="tbrow"><span class="tblabel">${e} ${R_LABEL[k]}</span><div class="tbtrack"><div class="tbfill" style="width:${Math.round(c/rmax*100)}%;background:var(--accent-light)"></div></div><span class="tbcount">${c}</span></div>`;}).join('');
+}
+
+// ── SNAPSHOT ──
+function renderBeliefs(){
+  const el=document.getElementById('beliefs-list');
+  if(!D.beliefs.length){el.innerHTML='<div class="empty"><p>пока нет</p></div>';return;}
+  el.innerHTML=D.beliefs.map((b,i)=>`<li><div class="blbody"><strong>${esc(b.title)}</strong>${b.src?`<span>— ${esc(b.src)}</span>`:''}</div><button class="bldel" onclick="delBelief(${i})">×</button></li>`).join('');
+}
+document.getElementById('btn-add-belief').onclick=()=>{document.getElementById('b-title').value='';document.getElementById('b-src').value='';document.getElementById('modal-belief').classList.add('open');};
+document.getElementById('cbelief').onclick=()=>closeModal('modal-belief');
+document.getElementById('sbelief').onclick=()=>{const t=document.getElementById('b-title').value.trim();if(!t)return;D.beliefs.push({title:t,src:document.getElementById('b-src').value.trim()});save(D);closeModal('modal-belief');renderBeliefs();};
+window.delBelief=(i)=>{D.beliefs.splice(i,1);save(D);renderBeliefs();};
+function renderIntro(){if(D.intro)document.getElementById('snap-intro-el').textContent=D.intro;}
+document.getElementById('btn-edit-intro').onclick=()=>{document.getElementById('intro-ta').value=D.intro||document.getElementById('snap-intro-el').textContent;document.getElementById('modal-intro').classList.add('open');};
+document.getElementById('cintro').onclick=()=>closeModal('modal-intro');
+document.getElementById('sintro').onclick=()=>{D.intro=document.getElementById('intro-ta').value.trim();save(D);closeModal('modal-intro');renderIntro();};
+
+// ── LIBRARY ──
+function renderLibrary(){
+  const el=document.getElementById('library-list');
+  const rf=document.getElementById('lib-rub').value;
+  const sf=document.getElementById('lib-src').value;
+  const items=(SRV_DATA.library||[]).filter(e=>(rf==='all'||e.rubric===rf)&&(sf==='all'||e.sourceType===sf));
+  // Show analyze banner
+  const pending=(SRV_DATA.library||[]).filter(e=>!e.analyzedAt).length;
+  const banner=document.getElementById('analyze-banner');
+  if(banner){
+    banner.style.display=pending>0?'flex':'none';
+    const pt=document.getElementById('analyze-progress-text');
+    if(pt)pt.textContent=`Ожидают анализа: ${pending} записей`;
+  }
+  if(!items.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
+  const rubricOpts=Object.entries(R_EMOJI).map(([k,e])=>`<option value="${k}">${e} ${R_LABEL[k]}</option>`).join('');
+  el.innerHTML=items.map((e,i)=>{
+    const realIdx=(SRV_DATA.library||[]).indexOf(e);
+    const long=(e.text||'').length>200;
+    return`<div class="lib-entry" data-src="${e.sourceType||'text'}">
+      <div class="lib-head">
+        <span class="lib-rubric ${e.rubric||'thought'}">${R_EMOJI[e.rubric]||'•'} ${R_LABEL[e.rubric]||e.rubric}</span>
+        <select class="lib-rubric-sel" title="Сменить рубрику" onchange="changeRubric(${realIdx},this.value)">
+          <option value="">переместить…</option>${rubricOpts}
+        </select>
+        <span class="lib-src">${SRC_LABEL[e.sourceType]||e.sourceType||''}</span>
+        <span class="lib-date">${e.date||''} ${e.time||''}</span>
+      </div>
+      ${e.title&&e.title!==e.text?.slice(0,60)?`<div class="lib-title">${esc(e.title)}</div>`:''}
+      <div class="lib-text clamped" id="lt${i}">${esc(e.text||'')}</div>
+      ${long?`<button class="lib-toggle" onclick="togLib(${i})">показать полностью</button>`:''}
+      ${e.context?`<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;font-style:italic;">${esc(e.context)}</div>`:''}
+      ${(e.tags||[]).length?`<div class="ttags" style="margin-top:0.4rem;">${(e.tags||[]).map(t=>`<span class="ttag">${esc(t)}</span>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// Смена рубрики вручную
+window.changeRubric=async(idx,rubric)=>{
+  if(!rubric||idx<0)return;
+  try{
+    await srvFetch(`/api/library/${idx}/rubric`,{method:'PUT',body:JSON.stringify({rubric})});
+    await pullFromServer(true);
+    renderLibrary();
+    showStatus('srv-status',`✓ перемещено в ${R_LABEL[rubric]}`,'ok');
+  }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+};
+
+// Re-analyze
+let reanalyzing=false;
+document.getElementById('btn-reanalyze')?.addEventListener('click',async()=>{
+  if(reanalyzing)return;
+  reanalyzing=true;
+  const btn=document.getElementById('btn-reanalyze');
+  const prog=document.getElementById('analyze-progress-text');
+  btn.disabled=true;
+  let total=0;
+  const run=async()=>{
+    try{
+      const r=await srvFetch('/api/reanalyze-batch?n=20',{method:'POST',body:'{}'});
+      total+=r.processed||0;
+      if(prog)prog.textContent=`Обработано: ${total} · Осталось: ${r.remaining}`;
+      if(r.remaining>0){
+        btn.textContent=`✦ ${r.remaining} осталось...`;
+        setTimeout(run,800);
+      } else {
+        btn.textContent='✓ готово';
+        setTimeout(async()=>{
+          await pullFromServer(true);
+          renderLibrary();
+          renderAll();
+          reanalyzing=false;
+          btn.disabled=false;
+          btn.textContent='✦ Проанализировать';
+        },500);
+      }
+    }catch(e){
+      reanalyzing=false;btn.disabled=false;btn.textContent='✦ Проанализировать';
+      if(prog)prog.textContent='Ошибка: '+e.message;
+    }
+  };
+  run();
+});
+window.togLib=(i)=>{const el=document.getElementById('lt'+i);const btn=el.nextElementSibling;if(el.classList.contains('clamped')){el.classList.remove('clamped');if(btn)btn.textContent='свернуть';}else{el.classList.add('clamped');if(btn)btn.textContent='показать полностью';}};
+document.getElementById('lib-rub').addEventListener('change',renderLibrary);
+document.getElementById('lib-src').addEventListener('change',renderLibrary);
+
+// ── RUBRIC GRIDS ──
+function rubTags(e){
+  const tags=e.tags||[];
+  if(!tags.length)return'';
+  return`<div class="ttags" style="margin-top:0.45rem;">${tags.map(t=>`<span class="ttag">${esc(t)}</span>`).join('')}</div>`;
+}
+function rubFullText(e,uid){
+  // показываем: body (резюме) + оригинал если длинный
+  const orig=e.text||'';
+  const hasOrig=orig.length>0&&orig!==e.body;
+  if(!hasOrig)return e.body?`<div class="rub-body">${esc(e.body)}</div>`:'';
+  const short=orig.length<=300;
+  return`${e.body?`<div class="rub-body">${esc(e.body)}</div>`:''}
+    <div class="rub-orig" id="ro${uid}" style="margin-top:0.5rem;font-size:0.84rem;line-height:1.65;color:var(--ink-soft);white-space:pre-wrap;${short?'':'display:none'}">${esc(orig)}</div>
+    ${short?'':`<button class="lib-toggle" onclick="togRub('ro${uid}',this)">${e.sourceType==='voice'?'🎙 слушать текст':'показать оригинал'}</button>`}`;
+}
+window.togRub=(id,btn)=>{const el=document.getElementById(id);if(!el)return;const hidden=el.style.display==='none';el.style.display=hidden?'block':'none';btn.textContent=hidden?'свернуть':'показать оригинал';};
+
+function renderRubricGrid(rubric,gridId){
+  const el=document.getElementById(gridId);if(!el)return;
+  const items=(SRV_DATA.library||[]).filter(e=>e.rubric===rubric);
+  if(!items.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
+  el.innerHTML=items.map((e,i)=>`<div class="rub-card ${rubric}${e.priority==='high'?' hi':''}">
+    ${e.priority==='high'?'<span class="priority-badge" style="margin-bottom:0.4rem;display:inline-block;">🔴 срочно</span>':''}
+    <div class="rub-title">${esc(e.title||'')}</div>
+    ${rubFullText(e,'rg'+gridId+i)}
+    ${e.emotion?`<div class="rub-emotion">${esc(e.emotion)}</div>`:''}
+    ${rubTags(e)}
+    <div class="rub-meta">
+      <span>${e.date||''} ${e.time||''}</span>
+      ${e.sourceType==='voice'?'<span>🎙 аудио</span>':''}
+      ${e.sourceType==='forward'?'<span>📎 переслано</span>':''}
+    </div>
+  </div>`).join('');
+}
+
+function renderTasks(){
+  const el=document.getElementById('tasks-grid');if(!el)return;
+  const f=document.getElementById('task-filter').value;
+  let items=(SRV_DATA.library||[]).filter(e=>e.rubric==='task');
+  if(f==='high')items=items.filter(e=>e.priority==='high');
+  if(f==='other')items=items.filter(e=>e.priority!=='high');
+  if(!items.length){el.innerHTML='<div class="empty"><p>задач нет</p></div>';return;}
+  el.innerHTML=items.map((e,i)=>`<div class="rub-card task${e.priority==='high'?' hi':''}">
+    ${e.priority==='high'?'<span class="priority-badge" style="margin-bottom:0.4rem;display:inline-block;">🔴 срочно</span>':''}
+    <div class="rub-title">${esc(e.title||'')}</div>
+    ${rubFullText(e,'tk'+i)}
+    ${rubTags(e)}
+    <div class="rub-meta"><span>${e.date||''}</span></div>
+  </div>`).join('');
+}
+document.getElementById('task-filter')?.addEventListener('change',renderTasks);
+
+let currentFeel='admiration';
+window.setFeel=(rub)=>{
+  currentFeel=rub;
+  renderRubricGrid(rub,'feelings-grid');
+};
+
+// ── MANUAL ANALYZE ──
+document.getElementById('btn-manual-analyze').onclick=async()=>{
+  const text=document.getElementById('manual-text').value.trim();
+  if(!text)return;
+  const btn=document.getElementById('btn-manual-analyze');
+  btn.disabled=true;btn.textContent='анализирую...';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:`Анализируй заметку. Отвечай ТОЛЬКО JSON: {"rubric":"idea|dream|task|thought|resentment|admiration|quote|media|context","items":[{"title":"","body":"","type":"belief|question|shifting|tension|abandoned","domain":"love|mind|society|self|work|other","was":"","now":"","emotion":"","priority":""}]}`,messages:[{role:'user',content:text}]})});
+    const data=await resp.json();
+    const raw=data.content?.map(c=>c.text||'').join('')||'{}';
+    const result=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const dateStr=new Date().toLocaleDateString('ru-RU',{month:'short',year:'numeric'});
+    if(result.rubric==='idea'&&result.items){
+      result.items.forEach(item=>{D.ideas.unshift({name:item.title,type:item.type||'belief',domain:item.domain||'other',body:item.body||'',was:item.was||'',now:item.now||'',date:dateStr});});
+      save(D);renderIdeas();
+    }
+    showStatus('manual-status',`✓ добавлено: ${result.items?.length||0} (${R_LABEL[result.rubric]||result.rubric})`,'ok');
+    document.getElementById('manual-text').value='';
+  }catch(e){showStatus('manual-status','ошибка: '+e.message,'err');}
+  btn.disabled=false;btn.textContent='✦ проанализировать';
+};
+
+// ── IMPORT ──
+const dropZone=document.getElementById('drop-zone');
+const importFile=document.getElementById('import-file');
+dropZone.addEventListener('click',()=>importFile.click());
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.style.borderColor='var(--accent)';});
+dropZone.addEventListener('dragleave',()=>dropZone.style.borderColor='');
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.style.borderColor='';const file=e.dataTransfer.files[0];if(file)processImportFile(file);});
+importFile.addEventListener('change',e=>{if(e.target.files[0])processImportFile(e.target.files[0]);});
+
+async function processImportFile(file){
+  const text=await file.text();
+  document.getElementById('import-text').value=text.slice(0,5000);
+  document.getElementById('import-source').value=file.name;
+}
+
+document.getElementById('btn-import').onclick=async()=>{
+  const text=document.getElementById('import-text').value.trim();
+  const source=document.getElementById('import-source').value.trim();
+  if(!text)return;
+  const btn=document.getElementById('btn-import');
+  btn.disabled=true;btn.textContent='импортирую...';
+  const bar=document.getElementById('import-progress');
+  const fill=document.getElementById('import-fill');
+  bar.style.display='block';fill.style.width='20%';
+  try{
+    const resp=await srvFetch('/api/import',{method:'POST',body:JSON.stringify({text,source})});
+    fill.style.width='100%';
+    showStatus('import-status',`✓ импортировано: ${resp.imported} записей`,'ok');
+    setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},2000);
+    await pullFromServer(true);
+  }catch(e){
+    // fallback: analyze locally
+    try{
+      const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:`Анализируй текст, извлеки идеи. JSON массив: [{"name":"","type":"belief|question|shifting|tension|abandoned","domain":"love|mind|society|self|work|other","body":"","was":"","now":""}]`,messages:[{role:'user',content:text.slice(0,3000)}]})});
+      const data=await r.json();
+      const raw=data.content?.map(c=>c.text||'').join('')||'[]';
+      const ideas=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      const dateStr=new Date().toLocaleDateString('ru-RU',{month:'short',year:'numeric'});
+      if(Array.isArray(ideas)){ideas.forEach(i=>D.ideas.unshift({...i,date:dateStr,fromImport:source||true}));save(D);renderIdeas();}
+      fill.style.width='100%';
+      showStatus('import-status',`✓ добавлено локально: ${Array.isArray(ideas)?ideas.length:0} идей`,'ok');
+    }catch(e2){showStatus('import-status','ошибка: '+e2.message,'err');}
+  }
+  btn.disabled=false;btn.textContent='✦ импортировать';
+};
+
+// ── TASK DONE ──
+const DONE_KEY='idmap_done_tasks_v1';
+function loadDone(){try{return new Set(JSON.parse(localStorage.getItem(DONE_KEY))||[]);}catch{return new Set();}}
+function saveDone(s){localStorage.setItem(DONE_KEY,JSON.stringify([...s]));}
+let doneIds=loadDone();
+
+function renderTasksWithDone(){
+  const el=document.getElementById('tasks-grid');if(!el)return;
+  const f=document.getElementById('task-filter').value;
+  let all=(SRV_DATA.library||[]).filter(e=>e.rubric==='task');
+  if(f==='high')all=all.filter(e=>e.priority==='high'&&!doneIds.has(e.id));
+  if(f==='other')all=all.filter(e=>e.priority!=='high'&&!doneIds.has(e.id));
+  const active=f==='all'?all.filter(e=>!doneIds.has(e.id)):all;
+  const done=f==='all'?all.filter(e=>doneIds.has(e.id)):[];
+  if(!active.length&&!done.length){el.innerHTML='<div class="empty"><p>задач нет</p></div>';return;}
+  const renderCard=(e,i,isDone)=>`<div class="rub-card task${e.priority==='high'&&!isDone?' hi':''}${isDone?' done-card':''}">
+    <div class="task-done-toggle" onclick="toggleDone(${JSON.stringify(e.id)})">
+      <div class="task-checkbox${isDone?' checked':''}"></div>
+      <span style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);">${isDone?'выполнено':'отметить'}</span>
+    </div>
+    ${e.priority==='high'&&!isDone?'<span class="priority-badge" style="margin-bottom:0.4rem;display:inline-block;">🔴 срочно</span>':''}
+    <div class="rub-title">${esc(e.title||'')}</div>
+    ${rubFullText(e,'td'+i)}
+    ${rubTags(e)}
+    <div class="rub-meta"><span>${e.date||''}</span></div>
+  </div>`;
+  el.innerHTML=active.map((e,i)=>renderCard(e,i,false)).join('')+
+    (done.length?`<div class="done-section-label">выполнено (${done.length})</div><div class="rub-grid">${done.map((e,i)=>renderCard(e,i+active.length,true)).join('')}</div>`:'');
+}
+window.toggleDone=(id)=>{
+  if(doneIds.has(id))doneIds.delete(id);else doneIds.add(id);
+  saveDone(doneIds);renderTasksWithDone();
+};
+// подменяем стандартный renderTasks
+const _origRenderTasks=renderTasks;
+// переопределяем глобально после объявления
+
+// ── CHAT ──
+const CHAT_KEY='idmap_chat_v1';
+function loadChatHistory(){try{return JSON.parse(localStorage.getItem(CHAT_KEY))||[];}catch{return[];}}
+function saveChatHistory(h){try{localStorage.setItem(CHAT_KEY,JSON.stringify(h.slice(-40)));}catch{}}
+let chatHistory=loadChatHistory();
+let chatLoading=false;
+
+function esc2(s){return esc(s).replace(/\n/g,'<br>');}
+
+function renderChatMessages(){
+  const el=document.getElementById('chat-messages');
+  const empty=document.getElementById('chat-empty');
+  if(!chatHistory.length){empty.style.display='block';el.querySelectorAll('.chat-msg').forEach(x=>x.remove());return;}
+  empty.style.display='none';
+  el.innerHTML=chatHistory.map(m=>{
+    if(m.role==='user')return`<div class="chat-msg user">${esc(m.content)}</div>`;
+    return`<div class="chat-msg assistant">${esc2(m.content)}${m.sources!==undefined?`<div class="chat-src">найдено записей: ${m.sources}</div>`:''}</div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+function renderChatHistoryChips(){
+  const bar=document.getElementById('chat-hist-bar');
+  // показываем последние уникальные вопросы как чипы для повтора
+  const questions=chatHistory.filter(m=>m.role==='user').slice(-6).reverse();
+  if(!questions.length){bar.innerHTML='';return;}
+  bar.innerHTML='<span style="font-size:0.68rem;font-family:JetBrains Mono,monospace;color:var(--ink-muted);align-self:center;">недавно: </span>'+
+    questions.map(m=>`<span class="chat-hist-chip" onclick="reuseQ(${JSON.stringify(esc(m.content))})">${esc(m.content.slice(0,40))}${m.content.length>40?'…':''}</span>`).join('');
+}
+window.reuseQ=(q)=>{document.getElementById('chat-input').value=q.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');document.getElementById('chat-input').focus();};
+
+async function sendChatMessage(){
+  const input=document.getElementById('chat-input');
+  const question=input.value.trim();
+  if(!question||chatLoading)return;
+  input.value='';
+  chatLoading=true;
+  const btn=document.getElementById('chat-send-btn');
+  btn.disabled=true;btn.textContent='...';
+  chatHistory.push({role:'user',content:question});
+  renderChatMessages();
+  try{
+    const r=await srvFetch('/api/chat',{method:'POST',body:JSON.stringify({question,history:chatHistory.slice(-8)})});
+    chatHistory.push({role:'assistant',content:r.answer,sources:r.sources});
+  }catch(e){
+    chatHistory.push({role:'assistant',content:'Ошибка: '+e.message});
+  }
+  saveChatHistory(chatHistory);
+  renderChatMessages();
+  renderChatHistoryChips();
+  chatLoading=false;btn.disabled=false;btn.textContent='→';
+}
+
+document.getElementById('chat-send-btn').onclick=sendChatMessage;
+document.getElementById('chat-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}
+});
+
+// ── SEED DATA ──
+function renderAll(){renderIdeas();renderTimeline();renderBeliefs();renderIntro();}
+
+if(!D.ideas.length){
+  D.ideas=[
+    {name:'Любовь нераскрыта',type:'question',domain:'love',body:'Тема до меня не раскрыта. Нет ответов, но есть вера. Допускаю сакральность и трансцендентность.',was:'',now:'',date:'май 2026'},
+    {name:'В математике есть ответы',type:'belief',domain:'mind',body:'Язык ограничен. В математике есть что-то большее — ответы на тревожащие вопросы.',was:'',now:'',date:'май 2026'},
+    {name:'Язык недостаточен',type:'belief',domain:'mind',body:'Цивилизация зависит от языка, но он ограничен. Есть что-то, что он не захватывает.',was:'',now:'',date:'май 2026'},
+    {name:'Я становлюсь левее',type:'shifting',domain:'society',body:'Человек — часть общества. Взаимодействие — третья сущность.',was:'год назад — более индивидуалистическая позиция',now:'сейчас — человек не существует вне общества',date:'май 2026'},
+    {name:'Самодостаточность — не идеал',type:'tension',domain:'self',body:'Интеллектуально отвергаю. Признаю: отчасти защита. Завидую тем, кто может.',was:'',now:'',date:'май 2026'},
+    {name:'Против концепции понимания',type:'belief',domain:'mind',body:'Понимание как закрытие — мне это не нравится.',was:'',now:'',date:'май 2026'},
+    {name:'Гордыня — главный грех',type:'belief',domain:'self',body:'Башня Таро. Мой моральный ориентир.',was:'',now:'',date:'май 2026'},
+    {name:'Прогресс — не формула',type:'abandoned',domain:'society',body:'Был непоколебимым сторонником. Отказался — сверхсмыслы не работают.',was:'27 лет: вера в прогресс как универсальную формулу',now:'29 лет: отказался',date:'март 2024'},
+    {name:'Математика — выбросил и вернул',type:'shifting',domain:'mind',body:'В 27 выбросил, к 29 вернулась.',was:'27 лет: матан в помойку',now:'29 лет: вернулась — там есть ответы для меня',date:'март 2024'},
+    {name:'Большинство решает',type:'belief',domain:'society',body:'Единственная идея из 27 которую сохранил.',was:'',now:'',date:'март 2024'},
+    {name:'Намерение не роляет',type:'belief',domain:'self',body:'Важна реальная жизнь, реальные действия.',was:'',now:'',date:'март 2024'},
+  ];
+  if(!D.events.length)D.events=[{title:'Заметка на 27 лет — итоги',date:'10 марта 2024',desc:'Прогресс, матан и центризм — в помойку. Большинство оставить.',tags:'прогресс, математика, большинство'}];
+  save(D);
+}
+
+renderAll();
+
+// Auto-connect on load
+setTimeout(()=>pullFromServer(true),800);
+</script>
+</body>
+</html>
