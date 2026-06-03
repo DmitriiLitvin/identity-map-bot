@@ -1,11 +1,8 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { MongoClient } from 'mongodb';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: '20mb' }));
 app.use((req, res, next) => {
@@ -16,20 +13,50 @@ app.use((req, res, next) => {
   next();
 });
 
-const { TELEGRAM_TOKEN, ANTHROPIC_API_KEY, OPENAI_API_KEY, API_SECRET, PORT = 3000 } = process.env;
+const { TELEGRAM_TOKEN, ANTHROPIC_API_KEY, OPENAI_API_KEY, API_SECRET, MONGODB_URI, PORT = 3000 } = process.env;
 const TG = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-const DATA_FILE = path.join(__dirname, 'data.json');
 
-function load() {
-  try { if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-  catch(e) { console.error('Load error:', e); }
-  return { library: [], cards: [], events: [], beliefs: [], intro: null };
+// ── MONGODB ──
+let mongoCol = null;
+
+async function connectMongo() {
+  if (!MONGODB_URI) { console.warn('⚠️  MONGODB_URI не задан — данные не сохранятся'); return; }
+  try {
+    const client = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    await client.connect();
+    mongoCol = client.db('identity-map').collection('data');
+    console.log('✓ MongoDB подключён');
+  } catch(e) {
+    console.error('MongoDB ошибка подключения:', e.message);
+  }
 }
-function save(d) {
+
+const EMPTY_DB = () => ({ library: [], cards: [], events: [], beliefs: [], intro: null });
+
+async function load() {
+  if (!mongoCol) return EMPTY_DB();
+  try {
+    const doc = await mongoCol.findOne({ _id: 'main' });
+    if (!doc) return EMPTY_DB();
+    const { _id, ...data } = doc;
+    return { library:[], cards:[], events:[], beliefs:[], intro:null, ...data };
+  } catch(e) {
+    console.error('Load error:', e.message);
+    return EMPTY_DB();
+  }
+}
+
+async function save(d) {
   d.updatedAt = new Date().toISOString();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(d, null, 2));
+  if (!mongoCol) return;
+  try {
+    await mongoCol.replaceOne({ _id: 'main' }, { _id: 'main', ...d }, { upsert: true });
+  } catch(e) {
+    console.error('Save error:', e.message);
+  }
 }
-let DB = load();
+
+let DB = EMPTY_DB();
 
 async function tgSend(chatId, text, extra = {}) {
   try {
@@ -253,7 +280,7 @@ function auth(req, res) {
 }
 
 app.get('/health', (req, res) => res.json({ ok: true, library: DB.library.length, cards: DB.cards.length, updatedAt: DB.updatedAt }));
-app.get('/api/data', (req, res) => { if (!auth(req,res)) return; DB = load(); res.json(DB); });
+app.get('/api/data', async (req, res) => { if (!auth(req,res)) return; DB = await load(); res.json(DB); });
 app.post('/api/sync', (req, res) => {
   if (!auth(req,res)) return;
   const { cards, events, beliefs, intro } = req.body;
@@ -483,5 +510,8 @@ async function setupWebhook() {
 
 app.listen(PORT, async () => {
   console.log(`🚀 Порт ${PORT}`);
+  await connectMongo();
+  DB = await load();
+  console.log(`📚 Загружено: library=${DB.library.length}, cards=${DB.cards.length}`);
   await setupWebhook();
 });
