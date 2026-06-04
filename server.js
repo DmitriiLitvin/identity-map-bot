@@ -424,11 +424,14 @@ ${numbered}
       });
     } catch (e) {
       console.error('reanalyze chunk error:', e.message);
+      save(DB);
+      const remaining = DB.library.filter(e => !e.analyzedAt || e.analyzedAt === 'null').length;
+      return res.json({ ok: false, error: e.message, processed, remaining });
     }
   }
 
   save(DB);
-  const remaining = DB.library.filter(e => !e.analyzedAt).length;
+  const remaining = DB.library.filter(e => !e.analyzedAt || e.analyzedAt === 'null').length;
   res.json({ ok: true, processed, remaining });
 });
 
