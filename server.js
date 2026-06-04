@@ -389,6 +389,7 @@ ${numbered}
       });
       const data = await r.json();
       const raw = data.content?.map(c => c.text || '').join('') || '[]';
+      console.log('claude raw:', raw.slice(0, 300), 'error:', data.error);
       const results = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
       chunk.forEach((entry, j) => {
