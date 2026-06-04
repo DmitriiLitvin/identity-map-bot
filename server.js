@@ -351,7 +351,8 @@ app.post('/api/reanalyze-batch', async (req, res) => {
 
   // Берём записи без анализа
   const pending = DB.library.filter(e => !e.analyzedAt || e.analyzedAt === 'null').slice(0, batchSize);
-  if (!pending.length) return res.json({ ok: true, processed: 0, remaining: 0 });
+  console.log('reanalyze: total=', DB.library.length, 'pending=', pending.length, 'sample analyzedAt=', DB.library[0]?.analyzedAt, typeof DB.library[0]?.analyzedAt);
+  if (!pending.length) return res.json({ ok: true, processed: 0, remaining: 0, debug: { total: DB.library.length, sample: DB.library[0]?.analyzedAt, type: typeof DB.library[0]?.analyzedAt } });
 
   const BATCH = 5; // по 5 за вызов Claude
   let processed = 0;
