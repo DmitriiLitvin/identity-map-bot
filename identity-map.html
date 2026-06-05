@@ -285,14 +285,9 @@ select.fil:focus{border-color:var(--accent);}
 <nav>
   <button class="active" data-tab="ideas">Идеи</button>
   <button data-tab="river">Река</button>
-  <button data-tab="timeline">Хронология</button>
-  <button data-tab="overview">Обзор</button>
-  <button data-tab="snapshot">Снимок</button>
   <button data-tab="library">📚 Библиотека</button>
   <button data-tab="dreams">🌙 Сны</button>
   <button data-tab="tasks">🎯 Задачи</button>
-  <button data-tab="thoughts">💭 Мысли</button>
-  <button data-tab="feelings">✨😤 Эмоции</button>
   <button data-tab="media">📖 Медиа</button>
   <button data-tab="chat">💬 Чат</button>
   <button data-tab="settings">⚙ Настройки</button>
@@ -490,6 +485,34 @@ select.fil:focus{border-color:var(--accent);}
 </div>
 
 </main>
+
+<!-- MODAL: Library Edit -->
+<div class="mo" id="modal-lib-edit">
+<div class="md">
+  <h3>Редактировать запись</h3>
+  <div class="fg"><label>рубрика</label>
+    <select id="le-rubric">
+      <option value="idea">🔥 Идея</option>
+      <option value="dream">🌙 Сон</option>
+      <option value="task">🎯 Задача</option>
+      <option value="thought">💭 Мысль</option>
+      <option value="resentment">😤 Обида</option>
+      <option value="admiration">✨ Восхищение</option>
+      <option value="quote">💬 Цитата</option>
+      <option value="media">📖 Медиа</option>
+      <option value="context">🌀 Контекст</option>
+    </select>
+  </div>
+  <div class="fg"><label>заголовок</label><input type="text" id="le-title"></div>
+  <div class="fg"><label>суть (body)</label><textarea id="le-body" style="min-height:80px;"></textarea></div>
+  <div class="fg"><label>полный текст</label><textarea id="le-text" style="min-height:100px;"></textarea></div>
+  <div class="fg"><label>теги (через запятую)</label><input type="text" id="le-tags" placeholder="математика, язык, общество"></div>
+  <div class="fg"><label>приоритет (для задач)</label>
+    <select id="le-priority"><option value="">—</option><option value="high">🔴 высокий</option><option value="medium">средний</option><option value="low">низкий</option></select>
+  </div>
+  <div class="macts"><button class="btncancel" id="clibedit">отмена</button><button class="btn" id="slibedit">сохранить</button></div>
+</div>
+</div>
 
 <!-- MODAL: Idea -->
 <div class="mo" id="modal-idea">
@@ -871,6 +894,9 @@ function renderLibrary(){
       ${long?`<button class="lib-toggle" onclick="togLib(${i})">показать полностью</button>`:''}
       ${e.context?`<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;font-style:italic;">${esc(e.context)}</div>`:''}
       ${(e.tags||[]).length?`<div class="ttags" style="margin-top:0.4rem;">${(e.tags||[]).map(t=>`<span class="ttag">${esc(t)}</span>`).join('')}</div>`:''}
+      <div style="margin-top:0.6rem;display:flex;gap:0.4rem;">
+        <button class="btn ghost" style="font-size:0.7rem;padding:0.2rem 0.6rem;" onclick="openLibEdit(${realIdx})">✎ редактировать</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1050,6 +1076,51 @@ document.getElementById('btn-import').onclick=async()=>{
     }catch(e2){showStatus('import-status','ошибка: '+e2.message,'err');}
   }
   btn.disabled=false;btn.textContent='✦ импортировать';
+};
+
+// ── LIBRARY EDIT ──
+let libEditIdx = null;
+window.openLibEdit = (idx) => {
+  libEditIdx = idx;
+  const e = SRV_DATA.library[idx];
+  if (!e) return;
+  document.getElementById('le-rubric').value = e.rubric || 'thought';
+  document.getElementById('le-title').value = e.title || '';
+  document.getElementById('le-body').value = e.body || '';
+  document.getElementById('le-text').value = e.text || '';
+  document.getElementById('le-tags').value = (e.tags || []).join(', ');
+  document.getElementById('le-priority').value = e.priority || '';
+  document.getElementById('modal-lib-edit').classList.add('open');
+};
+document.getElementById('clibedit').onclick = () => closeModal('modal-lib-edit');
+document.getElementById('modal-lib-edit').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('modal-lib-edit'); });
+document.getElementById('slibedit').onclick = async () => {
+  if (libEditIdx === null) return;
+  const rubric = document.getElementById('le-rubric').value;
+  const title = document.getElementById('le-title').value.trim();
+  const body = document.getElementById('le-body').value.trim();
+  const text = document.getElementById('le-text').value.trim();
+  const tags = document.getElementById('le-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const priority = document.getElementById('le-priority').value;
+  // Обновляем локально
+  SRV_DATA.library[libEditIdx] = { ...SRV_DATA.library[libEditIdx], rubric, title, body, text, tags, priority, analyzedAt: new Date().toISOString() };
+  saveSrvData(SRV_DATA);
+  // Отправляем на сервер
+  try {
+    await srvFetch(`/api/library/${libEditIdx}/rubric`, { method: 'PUT', body: JSON.stringify({ rubric }) });
+  } catch(e) { console.warn('rubric update:', e); }
+  closeModal('modal-lib-edit');
+  renderLibrary();
+  // Если стало идеей — добавляем в D.ideas
+  if (rubric === 'idea' && title) {
+    const exists = D.ideas.find(i => i.name === title);
+    if (!exists) {
+      D.ideas.unshift({ name: title, type: 'belief', domain: 'other', body, was: '', now: '', date: new Date().toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }) });
+      save(D);
+      renderIdeas();
+    }
+  }
+  showStatus('srv-status', '✓ сохранено', 'ok');
 };
 
 // ── TASK DONE ──
