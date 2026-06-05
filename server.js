@@ -137,12 +137,14 @@ async function analyze(text, context = '') {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, system: SYSTEM, messages: [{ role: 'user', content: msg }] })
+    body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 1500, system: SYSTEM, messages: [{ role: 'user', content: msg }] })
   });
   const data = await r.json();
+  if (data.error) { console.error('Claude API error:', JSON.stringify(data.error)); }
   const raw = data.content?.map(c => c.text || '').join('') || '{}';
+  console.log('Claude response rubric preview:', raw.slice(0, 150));
   try { return JSON.parse(raw.replace(/```json|```/g, '').trim()); }
-  catch(e) { return { rubric: 'thought', items: [{ title: text.slice(0, 60), body: text }] }; }
+  catch(e) { console.error('JSON parse error:', e.message, 'raw:', raw.slice(0, 200)); return { rubric: 'thought', items: [{ title: text.slice(0, 60), body: text }] }; }
 }
 
 const R_EMOJI = { idea:'🔥', dream:'🌙', task:'🎯', thought:'💭', resentment:'😤', admiration:'✨', quote:'💬', media:'📖', context:'🌀' };
