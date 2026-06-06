@@ -710,7 +710,7 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
   if(t==='chat'){renderChatMessages();renderChatHistoryChips();}
   if(t==='thoughts')renderRubricGrid('thought','thoughts-grid');
   if(t==='feelings')setFeel('admiration');
-  if(t==='media')renderRubricGrid('media','media-grid');
+  if(t==='media')renderMediaTab();
 }));
 
 // ── IDEAS ──
@@ -969,6 +969,28 @@ function rubFullText(e,uid){
 }
 window.togRub=(id,btn)=>{const el=document.getElementById(id);if(!el)return;const hidden=el.style.display==='none';el.style.display=hidden?'block':'none';btn.textContent=hidden?'свернуть':'показать оригинал';};
 
+// ── МЕДИА: всё что содержит URL или rubric=media ──
+function renderMediaTab(){
+  const el=document.getElementById('media-grid');if(!el)return;
+  const urlRe=/https?:\/\/\S+/;
+  const items=(SRV_DATA.library||[]).filter(e=>
+    e.rubric==='media'||(e.mediaUrls&&e.mediaUrls.length)||urlRe.test(e.text||'')||urlRe.test(e.body||'')
+  );
+  if(!items.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
+  el.innerHTML=items.map((e,i)=>{
+    const url=(e.mediaUrls&&e.mediaUrls[0])||((e.text||'').match(urlRe)||[])[0]||null;
+    const foreignBadge=e.rubric!=='media'?`<span style="font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);margin-bottom:0.35rem;display:block;">${R_EMOJI[e.rubric]||'•'} ${R_LABEL[e.rubric]||e.rubric}</span>`:'';
+    return`<div class="rub-card media">
+      ${foreignBadge}
+      <div class="rub-title">${esc(e.title||'')}</div>
+      ${rubFullText(e,'md'+i)}
+      ${url?`<a href="${esc(url)}" target="_blank" rel="noopener" style="font-size:0.72rem;color:var(--accent);word-break:break-all;display:block;margin:0.4rem 0 0.2rem;">${esc(url.length>70?url.slice(0,70)+'…':url)}</a>`:''}
+      ${rubTags(e)}
+      <div class="rub-meta"><span>${e.date||''} ${e.time||''}</span>${e.sourceType==='voice'?'<span>🎙</span>':''}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderRubricGrid(rubric,gridId){
   const el=document.getElementById(gridId);if(!el)return;
   const items=(SRV_DATA.library||[]).filter(e=>e.rubric===rubric);
@@ -1132,7 +1154,17 @@ let doneIds=loadDone();
 function renderTasksWithDone(){
   const el=document.getElementById('tasks-grid');if(!el)return;
   const f=document.getElementById('task-filter').value;
-  let all=(SRV_DATA.library||[]).filter(e=>e.rubric==='task');
+  // Раскрываем items: каждая задача из списка — отдельная карточка
+  let all=[];
+  (SRV_DATA.library||[]).filter(e=>e.rubric==='task').forEach(e=>{
+    if(e.items&&e.items.length>1){
+      e.items.forEach((item,idx)=>{
+        all.push({...e,id:`${e.id}_${idx}`,title:item.title||e.title,body:item.body||'',text:'',priority:item.priority||e.priority||'',tags:item.tags||e.tags||[],emotion:item.emotion||''});
+      });
+    }else{
+      all.push(e);
+    }
+  });
   if(f==='high')all=all.filter(e=>e.priority==='high'&&!doneIds.has(e.id));
   if(f==='other')all=all.filter(e=>e.priority!=='high'&&!doneIds.has(e.id));
   const active=f==='all'?all.filter(e=>!doneIds.has(e.id)):all;

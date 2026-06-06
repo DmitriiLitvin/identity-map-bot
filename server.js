@@ -226,44 +226,90 @@ async function handle(msg) {
     const rubric = result.rubric || 'thought';
     const items = result.items || [];
 
-    const allTags = [...new Set(items.flatMap(i => i.tags || []))];
-    const libEntry = {
-      id: Date.now(),
-      date: dateStr, time: timeStr,
-      sourceType, rubric, text,
-      title: items[0]?.title || text.slice(0, 60),
-      body: items[0]?.body || '',
-      emotion: items[0]?.emotion || '',
-      priority: items[0]?.priority || '',
-      tags: allTags,
-      context: context || null,
-      items,
-      analyzedAt: new Date().toISOString()
-    };
-    DB.library.unshift(libEntry);
+    // Извлекаем URL из текста (медиа-ссылки сохраняем вместе с записью)
+    const urlMatch = text.match(/https?:\/\/\S+/g);
+    const mediaUrls = urlMatch || [];
 
     const dateShort = new Date().toLocaleDateString('ru-RU', { month:'short', year:'numeric' });
-    items.forEach(item => {
-      DB.cards.unshift({ ...item, rubric: result.rubric, date: dateShort, libId: libEntry.id, addedAt: new Date().toISOString() });
-    });
 
-    save(DB);
-
-    const emoji = R_EMOJI[rubric] || '•';
-    const label = R_LABEL[rubric] || rubric;
-    let reply = `${emoji} <b>${label}</b>\n`;
-    if (sourceType === 'voice') reply += `<i>🎙 расшифровано из аудио</i>\n`;
-    reply += '\n';
-    if (items.length) {
-      items.forEach(item => {
-        reply += `<b>${item.title}</b>\n<i>${(item.body||'').slice(0, 120)}${(item.body||'').length > 120 ? '…' : ''}</i>\n`;
-        if (item.emotion) reply += `<i>${item.emotion}</i>\n`;
-        if (item.priority === 'high') reply += `🔴 высокий приоритет\n`;
+    // Если несколько задач/items — сохраняем каждую отдельной записью в library
+    if (items.length > 1) {
+      const savedEntries = [];
+      items.forEach((item, idx) => {
+        const entry = {
+          id: Date.now() + idx,
+          date: dateStr, time: timeStr,
+          sourceType, rubric,
+          text: item.title || text.slice(0, 60),
+          title: item.title || text.slice(0, 60),
+          body: item.body || '',
+          emotion: item.emotion || '',
+          priority: item.priority || '',
+          tags: item.tags || [],
+          mediaUrls: idx === 0 ? mediaUrls : [], // ссылки крепим к первой записи
+          context: context || null,
+          analyzedAt: new Date().toISOString()
+        };
+        DB.library.unshift(entry);
+        savedEntries.push(entry);
+        if (rubric === 'idea') {
+          DB.cards.unshift({ ...item, rubric, date: dateShort, libId: entry.id, addedAt: new Date().toISOString() });
+        }
       });
+
+      save(DB);
+
+      const emoji = R_EMOJI[rubric] || '•';
+      const label = R_LABEL[rubric] || rubric;
+      let reply = `${emoji} <b>${label} — ${items.length} шт.</b>\n\n`;
+      items.forEach(item => {
+        reply += `<b>${item.title}</b>\n<i>${(item.body||'').slice(0, 100)}${(item.body||'').length > 100 ? '…' : ''}</i>\n`;
+        if (item.priority === 'high') reply += `🔴 срочно\n`;
+        reply += '\n';
+      });
+      await tgSend(chatId, reply.trim());
+
     } else {
-      reply += '<i>сохранено</i>';
+      // Одна запись — стандартная логика
+      const allTags = [...new Set(items.flatMap(i => i.tags || []))];
+      const libEntry = {
+        id: Date.now(),
+        date: dateStr, time: timeStr,
+        sourceType, rubric, text,
+        title: items[0]?.title || text.slice(0, 60),
+        body: items[0]?.body || '',
+        emotion: items[0]?.emotion || '',
+        priority: items[0]?.priority || '',
+        tags: allTags,
+        mediaUrls,
+        context: context || null,
+        items,
+        analyzedAt: new Date().toISOString()
+      };
+      DB.library.unshift(libEntry);
+
+      items.forEach(item => {
+        DB.cards.unshift({ ...item, rubric, date: dateShort, libId: libEntry.id, addedAt: new Date().toISOString() });
+      });
+
+      save(DB);
+
+      const emoji = R_EMOJI[rubric] || '•';
+      const label = R_LABEL[rubric] || rubric;
+      let reply = `${emoji} <b>${label}</b>\n`;
+      if (sourceType === 'voice') reply += `<i>🎙 расшифровано из аудио</i>\n`;
+      reply += '\n';
+      if (items.length) {
+        items.forEach(item => {
+          reply += `<b>${item.title}</b>\n<i>${(item.body||'').slice(0, 120)}${(item.body||'').length > 120 ? '…' : ''}</i>\n`;
+          if (item.emotion) reply += `<i>${item.emotion}</i>\n`;
+          if (item.priority === 'high') reply += `🔴 высокий приоритет\n`;
+        });
+      } else {
+        reply += '<i>сохранено</i>';
+      }
+      await tgSend(chatId, reply.trim());
     }
-    await tgSend(chatId, reply.trim());
   } catch(e) {
     console.error('Handle error:', e);
     DB.library.unshift({ id: Date.now(), date: dateStr, time: timeStr, sourceType, rubric: 'thought', text, title: text.slice(0,60), analyzedAt: null });
