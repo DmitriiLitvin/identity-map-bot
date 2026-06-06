@@ -186,6 +186,28 @@ select.fil:focus{border-color:var(--accent);}
 .rub-emotion{font-style:italic;color:var(--accent2);margin-top:0.28rem;font-size:0.82rem;}
 .priority-badge{font-size:0.65rem;font-family:'JetBrains Mono',monospace;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(248,113,113,0.15);color:var(--red);border:1px solid rgba(248,113,113,0.3);}
 
+/* THOUGHT PUBLISHED */
+.thought-pub-btn{font-size:0.65rem;font-family:'JetBrains Mono',monospace;padding:0.15rem 0.5rem;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:none;color:var(--ink-muted);transition:all 0.15s;}
+.thought-pub-btn.published{background:rgba(52,211,153,0.15);color:#6ee7b7;border-color:rgba(52,211,153,0.3);}
+/* BIRTHDAY CALENDAR */
+.bday-calendar{display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1.5rem;}
+@media(max-width:800px){.bday-calendar{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.bday-calendar{grid-template-columns:1fr;}}
+.bday-month{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.7rem;}
+.bday-month-name{font-size:0.65rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-muted);margin-bottom:0.5rem;}
+.bday-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.bday-day{width:100%;aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;color:var(--ink-soft);position:relative;cursor:default;}
+.bday-day.has-bday{background:rgba(99,91,230,0.25);color:var(--accent);font-weight:700;cursor:pointer;}
+.bday-day.today{background:var(--accent);color:#fff;}
+.bday-day .bday-tooltip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid var(--accent);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.7rem;white-space:nowrap;z-index:100;color:var(--text);}
+.bday-day.has-bday:hover .bday-tooltip{display:block;}
+.bday-person{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.8rem;margin-bottom:0.7rem;}
+.bday-person-head{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
+.bday-person-name{font-weight:600;font-size:0.95rem;}
+.bday-person-date{font-size:0.72rem;color:var(--ink-muted);font-family:'JetBrains Mono',monospace;}
+.bday-soon{font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:10px;background:rgba(248,113,113,0.15);color:var(--red);}
+.bday-sub{font-size:0.68rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);text-transform:uppercase;margin:0.5rem 0 0.25rem;}
+.bday-item{font-size:0.82rem;color:var(--ink-soft);padding:0.25rem 0;border-bottom:1px solid var(--border);}
 /* TASK COLUMNS */
 .tasks-columns{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;}
 @media(max-width:640px){.tasks-columns{grid-template-columns:1fr;}}
@@ -301,6 +323,9 @@ select.fil:focus{border-color:var(--accent);}
   <button data-tab="library">📚 Библиотека</button>
   <button data-tab="dreams">🌙 Сны</button>
   <button data-tab="tasks">🎯 Задачи</button>
+  <button data-tab="thoughts">💭 Мысли</button>
+  <button data-tab="notebook">📌 Не забыть</button>
+  <button data-tab="birthdays">🎂 ДР</button>
   <button data-tab="chat">💬 Чат</button>
   <button data-tab="settings">⚙ Настройки</button>
 </nav>
@@ -418,8 +443,32 @@ select.fil:focus{border-color:var(--accent);}
 <!-- THOUGHTS -->
 <div class="section" id="tab-thoughts">
   <div class="sec-head"><h2>💭 Мысли вслух</h2><p>незавершённые, рассуждения</p></div>
-  <div class="toolbar"><button class="btn ghost" id="btn-sync-thoughts">↓ обновить</button></div>
+  <div class="toolbar">
+    <input type="search" id="thoughts-search" placeholder="🔍 поиск..." style="flex:1;min-width:120px;max-width:240px;padding:0.35rem 0.7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;">
+    <button class="btn ghost" id="btn-sync-thoughts">↓ обновить</button>
+  </div>
   <div class="rub-grid" id="thoughts-grid"></div>
+</div>
+
+<!-- NOTEBOOK -->
+<div class="section" id="tab-notebook">
+  <div class="sec-head"><h2>📌 Не забыть</h2><p>факты, пароли, адреса</p></div>
+  <div class="toolbar">
+    <input type="search" id="notebook-search" placeholder="🔍 поиск..." style="flex:1;min-width:120px;max-width:240px;padding:0.35rem 0.7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;">
+    <button class="btn ghost" id="btn-sync-notebook">↓ обновить</button>
+  </div>
+  <div class="rub-grid" id="notebook-grid"></div>
+</div>
+
+<!-- BIRTHDAYS -->
+<div class="section" id="tab-birthdays">
+  <div class="sec-head"><h2>🎂 Дни рождения</h2><p>люди, тосты, подарки</p></div>
+  <div class="toolbar">
+    <button class="btn ghost" id="btn-sync-birthdays">↓ обновить</button>
+    <button class="btn ghost" id="btn-import-birthdays">📥 импорт из файла</button>
+  </div>
+  <div id="birthdays-calendar"></div>
+  <div id="birthdays-list-section" style="margin-top:1.5rem;"></div>
 </div>
 
 <!-- FEELINGS -->
@@ -596,8 +645,8 @@ const DEFAULT_SRV='https://identity-map-bot.onrender.com';
 
 const TYPE_META={belief:{label:'🔥 убеждение',color:'#c14b2a',bar:'#e8a080'},question:{label:'❓ открытый вопрос',color:'#3d5a7a',bar:'#80a8d0'},shifting:{label:'🔄 в движении',color:'#7a6533',bar:'#c8a840'},tension:{label:'⚡ противоречие',color:'#7a3d7a',bar:'#c080c0'},abandoned:{label:'💀 отказался',color:'#9a9390',bar:'#c0bcb8'}};
 const DOMAIN_META={love:{label:'любовь',color:'#c14b2a'},mind:{label:'мышление',color:'#3d5a7a'},society:{label:'общество',color:'#4a6741'},self:{label:'я сам',color:'#7a6533'},work:{label:'работа',color:'#7a3d7a'},other:{label:'другое',color:'#9a9390'}};
-const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'📖',context:'🌀'};
-const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Медиа',context:'Контекст'};
+const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'📖',context:'🌀',notebook:'📌',birthday:'🎂'};
+const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Медиа',context:'Контекст',notebook:'Не забыть',birthday:'День рождения'};
 const SRC_LABEL={text:'текст',voice:'🎙 аудио',forward:'📎 переслано',photo:'📷 фото',import:'📥 импорт'};
 
 function load(){try{return JSON.parse(localStorage.getItem(SK))||{ideas:[],events:[],beliefs:[],intro:null};}catch{return{ideas:[],events:[],beliefs:[],intro:null};}}
@@ -699,7 +748,7 @@ document.getElementById('btn-srv-save').onclick=()=>{
 };
 
 document.getElementById('btn-srv-pull').onclick=()=>pullFromServer();
-['btn-sync-ideas','btn-sync-lib','btn-sync-dreams','btn-sync-tasks','btn-sync-thoughts','btn-sync-feel','btn-sync-media'].forEach(id=>{
+['btn-sync-ideas','btn-sync-lib','btn-sync-dreams','btn-sync-tasks','btn-sync-feel','btn-sync-media'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.onclick=()=>pullFromServer();
 });
@@ -724,7 +773,9 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
   if(t==='dreams')renderRubricGrid('dream','dreams-grid');
   if(t==='tasks'){renderTasksWithDone();}
   if(t==='chat'){renderChatMessages();renderChatHistoryChips();}
-  if(t==='thoughts')renderRubricGrid('thought','thoughts-grid');
+  if(t==='thoughts')renderThoughts();
+  if(t==='notebook')renderNotebook();
+  if(t==='birthdays')renderBirthdays();
   if(t==='feelings')setFeel('admiration');
   if(t==='media')renderMediaTab();
 }));
@@ -927,7 +978,8 @@ function renderLibrary(){
     if(pt)pt.textContent=`Ожидают анализа: ${pending} записей`;
   }
   if(!active.length&&!deleted.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
-  const rubricOpts=Object.entries(R_EMOJI).map(([k,e])=>`<option value="${k}">${e} ${R_LABEL[k]}</option>`).join('');
+  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','media','quote'];
+  const rubricOpts=MOVE_RUBRICS.map(k=>`<option value="${k}">${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`).join('');
   const renderEntry=(e,i,isDeleted)=>{
     const realIdx=(SRV_DATA.library||[]).indexOf(e);
     const long=(e.text||'').length>200;
@@ -1014,6 +1066,185 @@ window.togLib=(i)=>{const el=document.getElementById('lt'+i);const btn=el.nextEl
 document.getElementById('lib-rub').addEventListener('change',renderLibrary);
 document.getElementById('lib-src').addEventListener('change',renderLibrary);
 document.getElementById('lib-search').addEventListener('input',renderLibrary);
+
+// ── МЫСЛИ с поиском и галочкой "опубликовал" ──
+const PUBLISHED_KEY='idmap_published_v1';
+function loadPublished(){try{return JSON.parse(localStorage.getItem(PUBLISHED_KEY))||{};}catch{return{};}}
+function savePublished(p){localStorage.setItem(PUBLISHED_KEY,JSON.stringify(p));}
+let publishedMap=loadPublished();
+
+window.togglePublished=(id)=>{
+  if(publishedMap[id])delete publishedMap[id];
+  else publishedMap[id]={at:new Date().toISOString()};
+  savePublished(publishedMap);
+  renderThoughts();
+};
+
+function renderThoughts(){
+  const el=document.getElementById('thoughts-grid');if(!el)return;
+  const q=(document.getElementById('thoughts-search')?.value||'').toLowerCase();
+  let items=(SRV_DATA.library||[]).filter(e=>e.rubric==='thought'&&!deletedLibIds.has(e.id));
+  if(q)items=items.filter(e=>(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q));
+  if(!items.length){el.innerHTML='<div class="empty"><p>пусто</p></div>';return;}
+  el.innerHTML=items.map((e,i)=>{
+    const pub=publishedMap[e.id];
+    return`<div class="rub-card thought">
+      <div class="rub-title">${esc(e.title||'')}</div>
+      ${rubFullText(e,'th'+i)}
+      ${rubTags(e)}
+      <div class="rub-meta" style="align-items:center;">
+        <span>${e.date||''} ${e.time||''}</span>
+        <button class="thought-pub-btn${pub?' published':''}" onclick="togglePublished(${JSON.stringify(e.id)})">${pub?'✓ опубликовано':'◯ опубликовал?'}</button>
+        <button onclick="softDeleteLib(${JSON.stringify(e.id)});renderThoughts();" style="margin-left:0.3rem;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('thoughts-search')?.addEventListener('input',renderThoughts);
+['btn-sync-notebook','btn-sync-thoughts'].forEach(id=>{const el=document.getElementById(id);if(el)el.onclick=()=>pullFromServer();});
+
+// ── НЕ ЗАБЫТЬ ──
+function renderNotebook(){
+  const el=document.getElementById('notebook-grid');if(!el)return;
+  const q=(document.getElementById('notebook-search')?.value||'').toLowerCase();
+  let items=(SRV_DATA.library||[]).filter(e=>e.rubric==='notebook'&&!deletedLibIds.has(e.id));
+  if(q)items=items.filter(e=>(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q));
+  if(!items.length){el.innerHTML='<div class="empty"><p>пусто — скажи боту что запомнить</p></div>';return;}
+  el.innerHTML=items.map((e,i)=>`<div class="rub-card" style="border-top:2px solid #f59e0b;">
+    <div class="rub-title">${esc(e.title||'')}</div>
+    ${rubFullText(e,'nb'+i)}
+    ${rubTags(e)}
+    <div class="rub-meta">
+      <span>${e.date||''}</span>
+      <button onclick="softDeleteLib(${JSON.stringify(e.id)});renderNotebook();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+    </div>
+  </div>`).join('');
+}
+document.getElementById('notebook-search')?.addEventListener('input',renderNotebook);
+
+// ── ДНИ РОЖДЕНИЯ ──
+const MONTHS_RU_FULL=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_RU_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+
+// Исходные данные из Excel — загружаются если ДР пусто
+const BDAY_SEED=[
+  {id:1,name:'Мофья',day:1,month:5,year:null,toasts:[],gifts:[]},
+  {id:2,name:'Алина Севы',day:1,month:6,year:null,toasts:[],gifts:[]},
+  {id:3,name:'Мэргэн',day:3,month:2,year:null,toasts:[],gifts:[]},
+  {id:4,name:'Клава',day:4,month:1,year:null,toasts:[],gifts:[]},
+  {id:5,name:'Миша',day:4,month:5,year:null,toasts:[],gifts:[]},
+  {id:6,name:'Манушкин',day:4,month:7,year:1996,toasts:[],gifts:[]},
+  {id:7,name:'Фёдор',day:5,month:2,year:null,toasts:[],gifts:[]},
+  {id:8,name:'Настя',day:5,month:8,year:1996,toasts:[],gifts:[]},
+  {id:9,name:'Влад',day:6,month:5,year:1998,toasts:[],gifts:[]},
+  {id:10,name:'ба Надя',day:6,month:10,year:null,toasts:[],gifts:[]},
+  {id:11,name:'Миша (март)',day:11,month:3,year:1996,toasts:[],gifts:[]},
+  {id:12,name:'Деда Дима',day:11,month:11,year:null,toasts:[],gifts:[]},
+  {id:13,name:'Света',day:12,month:11,year:null,toasts:[],gifts:[]},
+  {id:14,name:'Арина',day:17,month:5,year:null,toasts:[],gifts:[]},
+  {id:15,name:'Лалока',day:18,month:8,year:null,toasts:[],gifts:[]},
+  {id:16,name:'Даня',day:19,month:1,year:null,toasts:[],gifts:[]},
+  {id:17,name:'тётя Люда',day:19,month:9,year:null,toasts:[],gifts:[]},
+  {id:18,name:'Соня Павлюченко',day:19,month:10,year:null,toasts:[],gifts:[]},
+  {id:19,name:'Серебряникова',day:20,month:1,year:null,toasts:[],gifts:[]},
+  {id:20,name:'Сова и ба Марина',day:20,month:10,year:null,toasts:[],gifts:[]},
+  {id:21,name:'Сканк',day:22,month:3,year:null,toasts:[],gifts:[]},
+  {id:22,name:'Гриша',day:22,month:4,year:null,toasts:[],gifts:[]},
+  {id:23,name:'ба Лена',day:22,month:9,year:null,toasts:[],gifts:[]},
+  {id:24,name:'Марк',day:25,month:8,year:null,toasts:[],gifts:[]},
+  {id:25,name:'Говорин',day:27,month:2,year:null,toasts:[],gifts:[]},
+  {id:26,name:'Аня Гришина дочь',day:28,month:1,year:null,toasts:[],gifts:[]},
+];
+
+let BDAYS=[];
+
+function getDaysUntil(day,month){
+  const now=new Date(); const y=now.getFullYear();
+  const t=new Date(y,month-1,day);
+  const todayMid=new Date(y,now.getMonth(),now.getDate());
+  if(t<todayMid)t.setFullYear(y+1);
+  return Math.round((t-todayMid)/(1000*60*60*24));
+}
+
+async function loadBirthdays(){
+  try{
+    const data=await srvFetch('/api/birthdays');
+    if(!data.length){
+      // Первый раз — импортируем из Excel seed
+      for(const b of BDAY_SEED){
+        await srvFetch('/api/birthdays',{method:'POST',body:JSON.stringify(b)});
+      }
+      BDAYS=[...BDAY_SEED];
+    } else { BDAYS=data; }
+  }catch(e){BDAYS=[...BDAY_SEED];}
+}
+
+function renderBirthdays(){
+  const calEl=document.getElementById('birthdays-calendar');
+  const listEl=document.getElementById('birthdays-list-section');
+  if(!calEl||!listEl)return;
+  if(!BDAYS.length){loadBirthdays().then(renderBirthdays);calEl.innerHTML='<div class="empty"><p>загружаю...</p></div>';return;}
+
+  // Строим карту {month: {day: [names]}}
+  const map={};
+  BDAYS.forEach(b=>{
+    if(!map[b.month])map[b.month]={};
+    if(!map[b.month][b.day])map[b.month][b.day]=[];
+    map[b.month][b.day].push(b.name);
+  });
+
+  const now=new Date();
+  const todayDay=now.getDate(), todayMonth=now.getMonth()+1;
+
+  // Календарь 12 месяцев
+  calEl.innerHTML='<div class="bday-calendar">'+[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>{
+    const daysInMonth=new Date(now.getFullYear(),m,0).getDate();
+    const firstWeekday=new Date(now.getFullYear(),m-1,1).getDay()||7; // пн=1
+    let days='';
+    // Пустые ячейки до 1-го
+    for(let i=1;i<firstWeekday;i++)days+=`<div class="bday-day"></div>`;
+    for(let d=1;d<=daysInMonth;d++){
+      const names=map[m]?.[d];
+      const isToday=d===todayDay&&m===todayMonth;
+      const hasBday=!!names;
+      days+=`<div class="bday-day${hasBday?' has-bday':''}${isToday?' today':''}">${d}${hasBday?`<span class="bday-tooltip">${names.join(', ')}</span>`:''}</div>`;
+    }
+    return`<div class="bday-month"><div class="bday-month-name">${MONTHS_RU_FULL[m-1]}</div><div class="bday-days">${days}</div></div>`;
+  }).join('')+'</div>';
+
+  // Список людей, отсортированный по ближайшим ДР
+  const sorted=[...BDAYS].sort((a,b)=>getDaysUntil(a.day,a.month)-getDaysUntil(b.day,b.month));
+  listEl.innerHTML=sorted.map(b=>{
+    const days=getDaysUntil(b.day,b.month);
+    const age=b.year?` · ${now.getFullYear()-b.year} лет`:'';
+    const soonBadge=days<=7?`<span class="bday-soon">${days===0?'сегодня!':days===1?'завтра':`через ${days} дн`}</span>`:'';
+    return`<div class="bday-person">
+      <div class="bday-person-head">
+        <span class="bday-person-name">🎂 ${esc(b.name)}</span>
+        <span class="bday-person-date">${b.day} ${MONTHS_RU_SHORT[b.month-1]}${b.year?' '+b.year:''}${age}</span>
+        ${soonBadge}
+        <button onclick="deleteBday(${b.id})" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button>
+      </div>
+      ${b.toasts?.length?`<div class="bday-sub">🥂 тосты</div>${b.toasts.map(t=>`<div class="bday-item">${esc(typeof t==='string'?t:t.text||'')}</div>`).join('')}`:''}
+      ${b.gifts?.length?`<div class="bday-sub">🎁 подарки</div>${b.gifts.map(g=>`<div class="bday-item">${esc(typeof g==='string'?g:g.text||'')}</div>`).join('')}`:''}
+    </div>`;
+  }).join('');
+}
+
+window.deleteBday=async(id)=>{
+  if(!confirm('Удалить день рождения?'))return;
+  try{await srvFetch(`/api/birthdays/${id}`,{method:'DELETE'});BDAYS=BDAYS.filter(b=>b.id!==id);renderBirthdays();}
+  catch(e){alert('Ошибка: '+e.message);}
+};
+
+document.getElementById('btn-sync-birthdays')?.addEventListener('click',()=>loadBirthdays().then(renderBirthdays));
+document.getElementById('btn-import-birthdays')?.addEventListener('click',async()=>{
+  if(!confirm(`Импортировать ${BDAY_SEED.length} ДР из Excel? Существующие не будут перезаписаны.`))return;
+  for(const b of BDAY_SEED){
+    try{await srvFetch('/api/birthdays',{method:'POST',body:JSON.stringify(b)});}catch{}
+  }
+  await loadBirthdays();renderBirthdays();
+});
 
 // ── RUBRIC GRIDS ──
 function rubTags(e){

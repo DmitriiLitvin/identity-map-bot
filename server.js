@@ -31,7 +31,7 @@ async function connectMongo() {
   }
 }
 
-const EMPTY_DB = () => ({ library: [], cards: [], events: [], beliefs: [], intro: null });
+const EMPTY_DB = () => ({ library: [], cards: [], events: [], beliefs: [], intro: null, birthdays: [], notified: [] });
 
 async function load() {
   if (!mongoCol) return EMPTY_DB();
@@ -96,8 +96,14 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
 
 Отвечай ТОЛЬКО валидным JSON без markdown:
 {
-  "rubric": "idea|dream|task|thought|resentment|admiration|quote|media|context",
+  "rubric": "idea|dream|task|thought|notebook|birthday|media|quote",
   "split": false,
+  "birthdayName": "",
+  "birthdayDay": null,
+  "birthdayMonth": null,
+  "birthdayYear": null,
+  "toastFor": "",
+  "giftFor": "",
   "items": [{
     "title": "название до 70 символов",
     "body": "суть 2-4 предложения",
@@ -105,34 +111,30 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
     "domain": "love|mind|society|self|work|other",
     "was": "",
     "now": "",
-    "source": "",
     "emotion": "",
     "priority": "",
     "tags": ["тег1", "тег2"]
   }]
 }
 
-ПОЛЕ split: поставь true ТОЛЬКО если в сообщении есть явная цифра или числительное указывающее количество задач — например "3 задачи", "две вещи", "4 дела", "пять штук". Если конкретного числа нет — split всегда false, это одна задача. "Несколько", "пара", "список" без цифры — НЕ считается, split=false.
+ПОЛЕ split: поставь true ТОЛЬКО если в сообщении есть явная цифра или числительное указывающее количество задач — например "3 задачи", "две вещи", "4 дела", "пять штук". Если конкретного числа нет — split всегда false. "Несколько", "пара" без цифры — НЕ считается, split=false.
 
 РУБРИКИ:
 
-TASK (задача) — ГЛАВНЫЙ ПРИОРИТЕТ. Ставь если:
-- Есть слова: нужно, надо, сделать, купить, написать, позвонить, разобраться, не забыть, хочу сделать, планирую, собираюсь
-- Перечисление конкретных действий (список дел — даже без маркеров)
-- Любое голосовое с делами → несколько task items
-- priority: high=срочно/важно, medium=обычное, low=когда-нибудь
+TASK (задача) — нужно, надо, сделать, купить, позвонить, планирую. priority: high=срочно, medium=обычное, low=когда-нибудь.
 
-IDEA — убеждение, философская мысль, идея о жизни, наблюдение о мире
-DREAM — сон, что приснилось, образ
-THOUGHT — рассуждение вслух, незавершённая мысль
-RESENTMENT — обида, раздражение, злость
-ADMIRATION — восхищение, резонанс
-QUOTE — пересланный чужой контент + комментарий
-MEDIA — книга/фильм/подкаст/статья
-CONTEXT — бытовое, что происходит
+IDEA — философская мысль, убеждение о жизни, наблюдение о мире. Требует type и domain.
 
-Если список задач — создай несколько items каждый с rubric: task.
-Задачи НЕ путай с мыслями — если можно сделать, это task.
+THOUGHT — рассуждение вслух, незавершённая мысль, вопрос к себе. НЕ задача и НЕ идея.
+
+NOTEBOOK (не забыть) — факт, пароль, адрес, число, информация которую надо помнить: "ключи лежат...", "пароль от...", "код от...", "адрес...", "не забыть что...". Конкретная информация без действия.
+
+BIRTHDAY (день рождения) — если упоминается дата ДР человека → заполни birthdayName, birthdayDay, birthdayMonth, birthdayYear (если есть). Если это тост/поздравление → заполни toastFor + текст в items[0].body. Если идея подарка → заполни giftFor + текст в items[0].body.
+
+DREAM — сон, что приснилось.
+MEDIA — книга/фильм/подкаст/статья/ссылка.
+QUOTE — пересланный чужой контент + комментарий.
+
 Если непонятно — thought.`;
 
 async function analyze(text, context = '') {
@@ -228,12 +230,47 @@ async function handle(msg) {
 
   if (!text.trim()) return;
 
+  // Проверяем напоминания о ДР при каждом сообщении
+  checkBirthdayReminders(chatId).catch(()=>{});
+
   await tgSend(chatId, '⏳ Анализирую...');
 
   try {
     const result = await analyze(text, context);
     const rubric = result.rubric || 'thought';
     const items = result.items || [];
+
+    // ── BIRTHDAY рубрика — отдельная обработка ──
+    if (rubric === 'birthday') {
+      let reply = '';
+      if (result.birthdayName && result.birthdayDay && result.birthdayMonth) {
+        // Добавляем/обновляем день рождения
+        const existing = DB.birthdays.find(b => b.name.toLowerCase() === result.birthdayName.toLowerCase());
+        if (existing) {
+          existing.day = result.birthdayDay;
+          existing.month = result.birthdayMonth;
+          if (result.birthdayYear) existing.year = result.birthdayYear;
+        } else {
+          DB.birthdays.push({ id: Date.now(), name: result.birthdayName, day: result.birthdayDay, month: result.birthdayMonth, year: result.birthdayYear||null, toasts: [], gifts: [] });
+        }
+        const daysLeft = getDaysUntil(result.birthdayDay, result.birthdayMonth);
+        reply += `🎂 День рождения <b>${result.birthdayName}</b> — ${result.birthdayDay} ${MONTHS_RU[result.birthdayMonth-1]}${result.birthdayYear?' '+result.birthdayYear:''}\n`;
+        reply += daysLeft === 0 ? '🎉 Сегодня!' : daysLeft === 1 ? '⏰ Завтра!' : `⏰ Через ${daysLeft} дней`;
+      }
+      if (result.toastFor && items[0]?.body) {
+        const person = DB.birthdays.find(b => b.name.toLowerCase().includes(result.toastFor.toLowerCase()));
+        if (person) { person.toasts = person.toasts || []; person.toasts.push({ text: items[0].body, addedAt: new Date().toISOString() }); }
+        reply += `\n🥂 Тост для ${result.toastFor} сохранён`;
+      }
+      if (result.giftFor && items[0]?.body) {
+        const person = DB.birthdays.find(b => b.name.toLowerCase().includes(result.giftFor.toLowerCase()));
+        if (person) { person.gifts = person.gifts || []; person.gifts.push({ text: items[0].body, addedAt: new Date().toISOString() }); }
+        reply += `\n🎁 Идея подарка для ${result.giftFor} сохранена`;
+      }
+      save(DB);
+      await tgSend(chatId, reply || '🎂 Сохранено');
+      return;
+    }
 
     // Извлекаем URL из текста (медиа-ссылки сохраняем вместе с записью)
     const urlMatch = text.match(/https?:\/\/\S+/g);
@@ -510,6 +547,37 @@ app.put('/api/library/:idx/rubric', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── BIRTHDAYS API ──
+app.get('/api/birthdays', (req, res) => { if (!auth(req,res)) return; res.json(DB.birthdays||[]); });
+app.post('/api/birthdays', (req, res) => {
+  if (!auth(req,res)) return;
+  const b = req.body;
+  if (!b.name||!b.day||!b.month) return res.status(400).json({error:'name, day, month required'});
+  const existing = (DB.birthdays||[]).find(x=>x.name.toLowerCase()===b.name.toLowerCase());
+  if (existing) { Object.assign(existing, b); } else { DB.birthdays = DB.birthdays||[]; DB.birthdays.push({id:Date.now(),...b,toasts:b.toasts||[],gifts:b.gifts||[]}); }
+  save(DB); res.json({ok:true});
+});
+app.delete('/api/birthdays/:id', (req, res) => {
+  if (!auth(req,res)) return;
+  const id = parseInt(req.params.id);
+  DB.birthdays = (DB.birthdays||[]).filter(b=>b.id!==id);
+  save(DB); res.json({ok:true});
+});
+app.put('/api/birthdays/:id/toast', (req, res) => {
+  if (!auth(req,res)) return;
+  const b = (DB.birthdays||[]).find(x=>x.id===parseInt(req.params.id));
+  if (!b) return res.status(404).json({error:'not found'});
+  b.toasts = b.toasts||[]; b.toasts.push({id:Date.now(),text:req.body.text,addedAt:new Date().toISOString()});
+  save(DB); res.json({ok:true});
+});
+app.put('/api/birthdays/:id/gift', (req, res) => {
+  if (!auth(req,res)) return;
+  const b = (DB.birthdays||[]).find(x=>x.id===parseInt(req.params.id));
+  if (!b) return res.status(404).json({error:'not found'});
+  b.gifts = b.gifts||[]; b.gifts.push({id:Date.now(),text:req.body.text,addedAt:new Date().toISOString()});
+  save(DB); res.json({ok:true});
+});
+
 // ── CHAT ENDPOINT ──
 app.post('/api/chat', async (req, res) => {
   if (!auth(req, res)) return;
@@ -565,6 +633,38 @@ ${ctxEntries || 'нет совпадений по запросу'}`;
   }
 });
 
+// ── ДНИ РОЖДЕНИЯ ──
+function getDaysUntil(day, month) {
+  const now = new Date();
+  const year = now.getFullYear();
+  let target = new Date(year, month - 1, day);
+  if (target.setHours(0,0,0,0) < now.setHours(0,0,0,0)) target = new Date(year + 1, month - 1, day);
+  return Math.round((target - new Date().setHours(0,0,0,0)) / (1000*60*60*24));
+}
+
+const MONTHS_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+
+async function checkBirthdayReminders(chatId) {
+  if (!DB.birthdays?.length) return;
+  const todayKey = new Date().toISOString().slice(0,10);
+  for (const b of DB.birthdays) {
+    const days = getDaysUntil(b.day, b.month);
+    if (![0,1,7].includes(days)) continue;
+    const notifyKey = `${b.id}_${todayKey}_${days}`;
+    if ((DB.notified||[]).includes(notifyKey)) continue;
+    const age = b.year ? ` (${new Date().getFullYear() - b.year} лет)` : '';
+    let msg;
+    if (days===0) msg = `🎂 Сегодня день рождения у <b>${b.name}</b>!${age}`;
+    else if (days===1) msg = `🎂 Завтра день рождения у <b>${b.name}</b>${age} — ${b.day} ${MONTHS_RU[b.month-1]}`;
+    else msg = `🎂 Через неделю день рождения у <b>${b.name}</b>${age} — ${b.day} ${MONTHS_RU[b.month-1]}`;
+    await tgSend(chatId, msg);
+    if (!DB.notified) DB.notified = [];
+    DB.notified.push(notifyKey);
+    if (DB.notified.length > 200) DB.notified = DB.notified.slice(-100);
+    save(DB);
+  }
+}
+
 async function setupWebhook() {
   const url = process.env.WEBHOOK_URL;
   if (!url) { console.log('WEBHOOK_URL не задан'); return; }
@@ -572,6 +672,17 @@ async function setupWebhook() {
   const r = await fetch(`${TG}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
   const j = await r.json();
   console.log('Webhook:', j.ok ? `✓ ${webhookUrl}` : `✗ ${j.description}`);
+  // Команды бота
+  await fetch(`${TG}/setMyCommands`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ commands: [
+      {command:'start', description:'Привет и справка'},
+      {command:'stats', description:'📊 Статистика записей'},
+      {command:'last', description:'🗂 Последние записи'},
+      {command:'tasks', description:'🎯 Активные задачи'},
+      {command:'dreams', description:'🌙 Последние сны'},
+    ]})
+  });
 }
 
 app.listen(PORT, async () => {
