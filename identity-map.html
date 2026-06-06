@@ -1038,7 +1038,7 @@ function renderMediaTab(){
   const el=document.getElementById('media-grid');if(!el)return;
   const urlRe=/https?:\/\/\S+/;
   const items=(SRV_DATA.library||[]).filter(e=>
-    e.rubric==='media'||(e.mediaUrls&&e.mediaUrls.length)||urlRe.test(e.text||'')||urlRe.test(e.body||'')
+    !deletedLibIds.has(e.id)&&(e.rubric==='media'||(e.mediaUrls&&e.mediaUrls.length)||urlRe.test(e.text||'')||urlRe.test(e.body||''))
   );
   if(!items.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
   el.innerHTML=items.map((e,i)=>{
@@ -1057,7 +1057,7 @@ function renderMediaTab(){
 
 function renderRubricGrid(rubric,gridId){
   const el=document.getElementById(gridId);if(!el)return;
-  const items=(SRV_DATA.library||[]).filter(e=>e.rubric===rubric);
+  const items=(SRV_DATA.library||[]).filter(e=>e.rubric===rubric&&!deletedLibIds.has(e.id));
   if(!items.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
   el.innerHTML=items.map((e,i)=>`<div class="rub-card ${rubric}${e.priority==='high'?' hi':''}">
     ${e.priority==='high'?'<span class="priority-badge" style="margin-bottom:0.4rem;display:inline-block;">🔴 срочно</span>':''}
@@ -1242,8 +1242,20 @@ function renderTasksWithDone(){
   const doneEl=document.getElementById('tasks-done-section');
   if(!urgentEl||!globalEl)return;
 
-  const all=(SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&!doneIds.has(e.id));
-  const done=(SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&doneIds.has(e.id));
+  // Раскрываем multi-item задачи в отдельные карточки
+  function expandTasks(src){
+    const result=[];
+    src.forEach(e=>{
+      if(e.items&&e.items.length>1){
+        e.items.forEach((item,idx)=>{
+          result.push({...e,id:`${e.id}_${idx}`,title:item.title||e.title,body:item.body||'',text:'',priority:item.priority||e.priority||'',tags:item.tags||e.tags||[]});
+        });
+      }else{result.push(e);}
+    });
+    return result;
+  }
+  const all=expandTasks((SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&!doneIds.has(e.id)&&!deletedLibIds.has(String(e.id).split('_')[0])&&!deletedLibIds.has(e.id)));
+  const done=expandTasks((SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&doneIds.has(e.id)&&!deletedLibIds.has(e.id)));
 
   const urgent=all.filter(e=>taskCols[e.id]!=='global');
   const global=all.filter(e=>taskCols[e.id]==='global');
