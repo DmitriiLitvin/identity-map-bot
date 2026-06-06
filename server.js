@@ -267,6 +267,22 @@ async function handle(msg) {
         if (person) { person.gifts = person.gifts || []; person.gifts.push({ text: items[0].body, addedAt: new Date().toISOString() }); }
         reply += `\n🎁 Идея подарка для ${result.giftFor} сохранена`;
       }
+      // Всё попадает в библиотеку — определяем subtype
+      const subtype = result.toastFor ? 'toast' : result.giftFor ? 'gift' : 'person';
+      const linkedName = result.toastFor || result.giftFor || result.birthdayName || '';
+      const bdayEntry = {
+        id: Date.now(),
+        date: dateStr, time: timeStr,
+        sourceType, rubric: 'birthday', subtype, linkedName,
+        text,
+        title: subtype === 'person'
+          ? `ДР: ${result.birthdayName||''} — ${result.birthdayDay||'?'} ${result.birthdayMonth ? MONTHS_RU[result.birthdayMonth-1] : ''}`
+          : subtype === 'toast' ? `Тост для ${linkedName}` : `Подарок для ${linkedName}`,
+        body: items[0]?.body || text.slice(0, 200),
+        tags: items[0]?.tags || [],
+        analyzedAt: new Date().toISOString()
+      };
+      DB.library.unshift(bdayEntry);
       save(DB);
       await tgSend(chatId, reply || '🎂 Сохранено');
       return;
@@ -540,8 +556,9 @@ app.put('/api/library/:idx/rubric', (req, res) => {
   if (!auth(req, res)) return;
   const idx = parseInt(req.params.idx);
   if (idx < 0 || idx >= DB.library.length) return res.status(404).json({ error: 'not found' });
-  const { rubric } = req.body;
+  const { rubric, type } = req.body;
   DB.library[idx].rubric = rubric;
+  if (type) DB.library[idx].type = type;
   DB.library[idx].analyzedAt = new Date().toISOString();
   save(DB);
   res.json({ ok: true });

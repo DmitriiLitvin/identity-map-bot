@@ -407,7 +407,20 @@ select.fil:focus{border-color:var(--accent);}
   </div>
   <div class="toolbar">
     <input type="search" id="lib-search" placeholder="🔍 поиск..." style="flex:1;min-width:120px;max-width:260px;padding:0.35rem 0.7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;">
-    <select class="fil" id="lib-rub"><option value="all">все рубрики</option><option value="idea">🔥 идеи</option><option value="dream">🌙 сны</option><option value="task">🎯 задачи</option><option value="thought">💭 мысли</option><option value="resentment">😤 обиды</option><option value="admiration">✨ восхищения</option><option value="quote">💬 цитаты</option><option value="media">📖 медиа</option><option value="context">🌀 контекст</option></select>
+    <select class="fil" id="lib-rub">
+      <option value="all">все рубрики</option>
+      <option value="idea">🔥 идеи</option>
+      <option value="dream">🌙 сны</option>
+      <option value="task">🎯 задачи</option>
+      <option value="thought">💭 мысли</option>
+      <option value="notebook">📌 не забыть</option>
+      <option value="birthday">🎂 дни рождения</option>
+      <option value="media">📖 медиа</option>
+      <option value="quote">💬 цитаты</option>
+    </select>
+    <select class="fil" id="lib-sub" style="display:none">
+      <option value="all">все подтипы</option>
+    </select>
     <select class="fil" id="lib-src"><option value="all">все форматы</option><option value="text">текст</option><option value="voice">🎙 аудио</option><option value="forward">📎 пересланное</option><option value="twitter">Twitter</option><option value="twitter-reply">Twitter ответы</option><option value="threads">Threads</option><option value="import">📥 импорт</option></select>
     <button class="btn ghost" id="btn-sync-lib">↓ обновить</button>
   </div>
@@ -962,8 +975,15 @@ function renderLibrary(){
   const rf=document.getElementById('lib-rub').value;
   const sf=document.getElementById('lib-src').value;
   const q=(document.getElementById('lib-search')?.value||'').toLowerCase().trim();
+  const sub=document.getElementById('lib-sub')?.value||'all';
   const all=(SRV_DATA.library||[]).filter(e=>{
     if((rf!=='all'&&e.rubric!==rf)||(sf!=='all'&&e.sourceType!==sf))return false;
+    // Подфильтр
+    if(sub!=='all'){
+      if(rf==='idea'&&e.type!==sub)return false;
+      if(rf==='task'&&e.priority!==sub)return false;
+      if(rf==='birthday'&&e.subtype!==sub)return false;
+    }
     if(!q)return true;
     return(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q)||((e.tags||[]).join(' ')).toLowerCase().includes(q);
   });
@@ -978,15 +998,22 @@ function renderLibrary(){
     if(pt)pt.textContent=`Ожидают анализа: ${pending} записей`;
   }
   if(!active.length&&!deleted.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
-  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','media','quote'];
+  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','birthday','media','quote'];
   const rubricOpts=MOVE_RUBRICS.map(k=>`<option value="${k}">${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`).join('');
+  // Подтипы для идей
+  const ideaTypeOpts=['belief','question','shifting','tension','abandoned'].map(t=>`<option value="idea:${t}">&nbsp;&nbsp;— ${LIB_SUBS.idea.find(x=>x[0]===t)?.[1]||t}</option>`).join('');
+  const allMoveOpts='<option value="">переместить…</option>'+MOVE_RUBRICS.map(k=>{
+    let opts=`<option value="${k}">${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`;
+    if(k==='idea')opts+=ideaTypeOpts;
+    return opts;
+  }).join('');
   const renderEntry=(e,i,isDeleted)=>{
     const realIdx=(SRV_DATA.library||[]).indexOf(e);
     const long=(e.text||'').length>200;
     return`<div class="lib-entry${isDeleted?' soft-deleted':''}" data-src="${e.sourceType||'text'}">
       <div class="lib-head">
         <span class="lib-rubric ${e.rubric||'thought'}">${R_EMOJI[e.rubric]||'•'} ${R_LABEL[e.rubric]||e.rubric}</span>
-        ${!isDeleted?`<select class="lib-rubric-sel" title="Сменить рубрику" onchange="changeRubric(${realIdx},this.value)"><option value="">переместить…</option>${rubricOpts}</select>`:''}
+        ${!isDeleted?`<select class="lib-rubric-sel" title="Сменить рубрику" onchange="changeRubric(${realIdx},this.value)">${allMoveOpts}</select>`:''}
         <span class="lib-src">${SRC_LABEL[e.sourceType]||e.sourceType||''}</span>
         <span class="lib-date">${e.date||''} ${e.time||''}</span>
       </div>
@@ -1017,13 +1044,17 @@ function renderLibrary(){
 window.toggleShowDeleted=()=>{showDeleted=!showDeleted;renderLibrary();};
 
 // Смена рубрики вручную
-window.changeRubric=async(idx,rubric)=>{
-  if(!rubric||idx<0)return;
+window.changeRubric=async(idx,val)=>{
+  if(!val||idx<0)return;
+  // val может быть "idea:belief" — рубрика:подтип
+  const [rubric,subtype]=val.includes(':')?val.split(':'):[val,null];
   try{
-    await srvFetch(`/api/library/${idx}/rubric`,{method:'PUT',body:JSON.stringify({rubric})});
+    const body={rubric};
+    if(subtype)body.type=subtype;
+    await srvFetch(`/api/library/${idx}/rubric`,{method:'PUT',body:JSON.stringify(body)});
     await pullFromServer(true);
     renderLibrary();
-    showStatus('srv-status',`✓ перемещено в ${R_LABEL[rubric]}`,'ok');
+    showStatus('srv-status',`✓ перемещено в ${R_LABEL[rubric]||rubric}${subtype?' / '+subtype:''}`,'ok');
   }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
 };
 
@@ -1063,7 +1094,25 @@ document.getElementById('btn-reanalyze')?.addEventListener('click',async()=>{
   run();
 });
 window.togLib=(i)=>{const el=document.getElementById('lt'+i);const btn=el.nextElementSibling;if(el.classList.contains('clamped')){el.classList.remove('clamped');if(btn)btn.textContent='свернуть';}else{el.classList.add('clamped');if(btn)btn.textContent='показать полностью';}};
-document.getElementById('lib-rub').addEventListener('change',renderLibrary);
+// Подфильтры по рубрикам
+const LIB_SUBS={
+  idea:[['all','все типы'],['belief','🔥 убеждение'],['question','❓ открытый вопрос'],['shifting','🔄 в движении'],['tension','⚡ противоречие'],['abandoned','💀 отказался']],
+  task:[['all','все приоритеты'],['high','🔴 срочные'],['medium','⚪ обычные'],['low','🔵 долгосрочные']],
+  birthday:[['all','все'],['person','🎂 дата ДР'],['toast','🥂 тосты'],['gift','🎁 подарки']],
+};
+document.getElementById('lib-rub').addEventListener('change',()=>{
+  const rub=document.getElementById('lib-rub').value;
+  const subEl=document.getElementById('lib-sub');
+  if(LIB_SUBS[rub]){
+    subEl.style.display='';
+    subEl.innerHTML=LIB_SUBS[rub].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  } else {
+    subEl.style.display='none';
+    subEl.value='all';
+  }
+  renderLibrary();
+});
+document.getElementById('lib-sub').addEventListener('change',renderLibrary);
 document.getElementById('lib-src').addEventListener('change',renderLibrary);
 document.getElementById('lib-search').addEventListener('input',renderLibrary);
 
@@ -1179,57 +1228,87 @@ async function loadBirthdays(){
   }catch(e){BDAYS=[...BDAY_SEED];}
 }
 
+let bdayView='people'; // 'people' | 'toasts' | 'gifts'
+
 function renderBirthdays(){
   const calEl=document.getElementById('birthdays-calendar');
   const listEl=document.getElementById('birthdays-list-section');
   if(!calEl||!listEl)return;
   if(!BDAYS.length){loadBirthdays().then(renderBirthdays);calEl.innerHTML='<div class="empty"><p>загружаю...</p></div>';return;}
 
-  // Строим карту {month: {day: [names]}}
-  const map={};
-  BDAYS.forEach(b=>{
-    if(!map[b.month])map[b.month]={};
-    if(!map[b.month][b.day])map[b.month][b.day]=[];
-    map[b.month][b.day].push(b.name);
-  });
+  // Вкладки внутри раздела
+  calEl.innerHTML=`<div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+    <button class="btn${bdayView==='people'?'':' ghost'}" onclick="setBdayView('people')">🎂 Люди & Календарь</button>
+    <button class="btn${bdayView==='toasts'?'':' ghost'}" onclick="setBdayView('toasts')">🥂 Тосты</button>
+    <button class="btn${bdayView==='gifts'?'':' ghost'}" onclick="setBdayView('gifts')">🎁 Подарки</button>
+  </div>`;
 
   const now=new Date();
   const todayDay=now.getDate(), todayMonth=now.getMonth()+1;
 
-  // Календарь 12 месяцев
-  calEl.innerHTML='<div class="bday-calendar">'+[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>{
-    const daysInMonth=new Date(now.getFullYear(),m,0).getDate();
-    const firstWeekday=new Date(now.getFullYear(),m-1,1).getDay()||7; // пн=1
-    let days='';
-    // Пустые ячейки до 1-го
-    for(let i=1;i<firstWeekday;i++)days+=`<div class="bday-day"></div>`;
-    for(let d=1;d<=daysInMonth;d++){
-      const names=map[m]?.[d];
-      const isToday=d===todayDay&&m===todayMonth;
-      const hasBday=!!names;
-      days+=`<div class="bday-day${hasBday?' has-bday':''}${isToday?' today':''}">${d}${hasBday?`<span class="bday-tooltip">${names.join(', ')}</span>`:''}</div>`;
-    }
-    return`<div class="bday-month"><div class="bday-month-name">${MONTHS_RU_FULL[m-1]}</div><div class="bday-days">${days}</div></div>`;
-  }).join('')+'</div>';
+  if(bdayView==='people'){
+    // Календарь
+    const map={};
+    BDAYS.forEach(b=>{
+      if(!map[b.month])map[b.month]={};
+      if(!map[b.month][b.day])map[b.month][b.day]=[];
+      map[b.month][b.day].push(b.name);
+    });
+    calEl.innerHTML+=`<div class="bday-calendar">`+[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>{
+      const dim=new Date(now.getFullYear(),m,0).getDate();
+      const fw=new Date(now.getFullYear(),m-1,1).getDay()||7;
+      let days='';
+      for(let i=1;i<fw;i++)days+=`<div class="bday-day"></div>`;
+      for(let d=1;d<=dim;d++){
+        const names=map[m]?.[d];
+        const isToday=d===todayDay&&m===todayMonth;
+        days+=`<div class="bday-day${names?' has-bday':''}${isToday?' today':''}">${d}${names?`<span class="bday-tooltip">${names.join(', ')}</span>`:''}</div>`;
+      }
+      return`<div class="bday-month"><div class="bday-month-name">${MONTHS_RU_FULL[m-1]}</div><div class="bday-days">${days}</div></div>`;
+    }).join('')+`</div>`;
 
-  // Список людей, отсортированный по ближайшим ДР
-  const sorted=[...BDAYS].sort((a,b)=>getDaysUntil(a.day,a.month)-getDaysUntil(b.day,b.month));
-  listEl.innerHTML=sorted.map(b=>{
-    const days=getDaysUntil(b.day,b.month);
-    const age=b.year?` · ${now.getFullYear()-b.year} лет`:'';
-    const soonBadge=days<=7?`<span class="bday-soon">${days===0?'сегодня!':days===1?'завтра':`через ${days} дн`}</span>`:'';
-    return`<div class="bday-person">
-      <div class="bday-person-head">
-        <span class="bday-person-name">🎂 ${esc(b.name)}</span>
-        <span class="bday-person-date">${b.day} ${MONTHS_RU_SHORT[b.month-1]}${b.year?' '+b.year:''}${age}</span>
-        ${soonBadge}
-        <button onclick="deleteBday(${b.id})" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button>
-      </div>
-      ${b.toasts?.length?`<div class="bday-sub">🥂 тосты</div>${b.toasts.map(t=>`<div class="bday-item">${esc(typeof t==='string'?t:t.text||'')}</div>`).join('')}`:''}
-      ${b.gifts?.length?`<div class="bday-sub">🎁 подарки</div>${b.gifts.map(g=>`<div class="bday-item">${esc(typeof g==='string'?g:g.text||'')}</div>`).join('')}`:''}
-    </div>`;
-  }).join('');
+    // Карточки людей с привязанными тостами и подарками из library
+    const sorted=[...BDAYS].sort((a,b)=>getDaysUntil(a.day,a.month)-getDaysUntil(b.day,b.month));
+    const libToasts=(SRV_DATA.library||[]).filter(e=>e.rubric==='birthday'&&e.subtype==='toast'&&!deletedLibIds.has(e.id));
+    const libGifts=(SRV_DATA.library||[]).filter(e=>e.rubric==='birthday'&&e.subtype==='gift'&&!deletedLibIds.has(e.id));
+    listEl.innerHTML=sorted.map(b=>{
+      const days=getDaysUntil(b.day,b.month);
+      const age=b.year?` · ${now.getFullYear()-b.year} лет`:'';
+      const soonBadge=days<=7?`<span class="bday-soon">${days===0?'сегодня!':days===1?'завтра':`через ${days} дн`}</span>`:'';
+      const myToasts=libToasts.filter(e=>(e.linkedName||'').toLowerCase().includes(b.name.toLowerCase()));
+      const myGifts=libGifts.filter(e=>(e.linkedName||'').toLowerCase().includes(b.name.toLowerCase()));
+      return`<div class="bday-person">
+        <div class="bday-person-head">
+          <span class="bday-person-name">🎂 ${esc(b.name)}</span>
+          <span class="bday-person-date">${b.day} ${MONTHS_RU_SHORT[b.month-1]}${b.year?' '+b.year:''}${age}</span>
+          ${soonBadge}
+          <button onclick="deleteBday(${b.id})" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+        </div>
+        ${myToasts.length?`<div class="bday-sub">🥂 тосты (${myToasts.length})</div>${myToasts.map((t,ti)=>`<div class="bday-item" style="display:flex;justify-content:space-between;">${esc(t.body||t.title||'')} <button onclick="softDeleteLib(${JSON.stringify(t.id)});renderBirthdays();" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.65rem;">🗑</button></div>`).join('')}`:''}
+        ${myGifts.length?`<div class="bday-sub">🎁 подарки (${myGifts.length})</div>${myGifts.map((g,gi)=>`<div class="bday-item" style="display:flex;justify-content:space-between;">${esc(g.body||g.title||'')} <button onclick="softDeleteLib(${JSON.stringify(g.id)});renderBirthdays();" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.65rem;">🗑</button></div>`).join('')}`:''}
+      </div>`;
+    }).join('');
+
+  } else if(bdayView==='toasts'){
+    const toasts=(SRV_DATA.library||[]).filter(e=>e.rubric==='birthday'&&e.subtype==='toast'&&!deletedLibIds.has(e.id));
+    listEl.innerHTML=toasts.length?toasts.map((t,i)=>`<div class="rub-card" style="border-top:2px solid #a78bfa;">
+      <div style="font-size:0.65rem;color:var(--ink-muted);margin-bottom:0.3rem;">🥂 тост для ${esc(t.linkedName||'')}</div>
+      <div class="rub-title">${esc(t.title||'')}</div>
+      ${t.body?`<div class="rub-body">${esc(t.body)}</div>`:''}
+      <div class="rub-meta"><span>${t.date||''}</span><button onclick="softDeleteLib(${JSON.stringify(t.id)});renderBirthdays();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button></div>
+    </div>`).join(''):'<div class="empty"><p>тостов пока нет — скажи боту «тост для [имя]: текст»</p></div>';
+
+  } else {
+    const gifts=(SRV_DATA.library||[]).filter(e=>e.rubric==='birthday'&&e.subtype==='gift'&&!deletedLibIds.has(e.id));
+    listEl.innerHTML=gifts.length?gifts.map((g,i)=>`<div class="rub-card" style="border-top:2px solid #34d399;">
+      <div style="font-size:0.65rem;color:var(--ink-muted);margin-bottom:0.3rem;">🎁 подарок для ${esc(g.linkedName||'')}</div>
+      <div class="rub-title">${esc(g.title||'')}</div>
+      ${g.body?`<div class="rub-body">${esc(g.body)}</div>`:''}
+      <div class="rub-meta"><span>${g.date||''}</span><button onclick="softDeleteLib(${JSON.stringify(g.id)});renderBirthdays();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button></div>
+    </div>`).join(''):'<div class="empty"><p>идей подарков пока нет — скажи боту «подарок для [имя]: идея»</p></div>';
+  }
 }
+window.setBdayView=(v)=>{bdayView=v;renderBirthdays();};
 
 window.deleteBday=async(id)=>{
   if(!confirm('Удалить день рождения?'))return;
