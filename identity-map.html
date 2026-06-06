@@ -381,6 +381,7 @@ select.fil:focus{border-color:var(--accent);}
     <button class="btn" id="btn-reanalyze">✦ Проанализировать</button>
   </div>
   <div class="toolbar">
+    <input type="search" id="lib-search" placeholder="🔍 поиск..." style="flex:1;min-width:120px;max-width:260px;padding:0.35rem 0.7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;">
     <select class="fil" id="lib-rub"><option value="all">все рубрики</option><option value="idea">🔥 идеи</option><option value="dream">🌙 сны</option><option value="task">🎯 задачи</option><option value="thought">💭 мысли</option><option value="resentment">😤 обиды</option><option value="admiration">✨ восхищения</option><option value="quote">💬 цитаты</option><option value="media">📖 медиа</option><option value="context">🌀 контекст</option></select>
     <select class="fil" id="lib-src"><option value="all">все форматы</option><option value="text">текст</option><option value="voice">🎙 аудио</option><option value="forward">📎 пересланное</option><option value="twitter">Twitter</option><option value="twitter-reply">Twitter ответы</option><option value="threads">Threads</option><option value="import">📥 импорт</option></select>
     <button class="btn ghost" id="btn-sync-lib">↓ обновить</button>
@@ -909,7 +910,12 @@ function renderLibrary(){
   const el=document.getElementById('library-list');
   const rf=document.getElementById('lib-rub').value;
   const sf=document.getElementById('lib-src').value;
-  const all=(SRV_DATA.library||[]).filter(e=>(rf==='all'||e.rubric===rf)&&(sf==='all'||e.sourceType===sf));
+  const q=(document.getElementById('lib-search')?.value||'').toLowerCase().trim();
+  const all=(SRV_DATA.library||[]).filter(e=>{
+    if((rf!=='all'&&e.rubric!==rf)||(sf!=='all'&&e.sourceType!==sf))return false;
+    if(!q)return true;
+    return(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q)||((e.tags||[]).join(' ')).toLowerCase().includes(q);
+  });
   const active=all.filter(e=>!deletedLibIds.has(e.id));
   const deleted=all.filter(e=>deletedLibIds.has(e.id));
   // Show analyze banner
@@ -1007,6 +1013,7 @@ document.getElementById('btn-reanalyze')?.addEventListener('click',async()=>{
 window.togLib=(i)=>{const el=document.getElementById('lt'+i);const btn=el.nextElementSibling;if(el.classList.contains('clamped')){el.classList.remove('clamped');if(btn)btn.textContent='свернуть';}else{el.classList.add('clamped');if(btn)btn.textContent='показать полностью';}};
 document.getElementById('lib-rub').addEventListener('change',renderLibrary);
 document.getElementById('lib-src').addEventListener('change',renderLibrary);
+document.getElementById('lib-search').addEventListener('input',renderLibrary);
 
 // ── RUBRIC GRIDS ──
 function rubTags(e){
@@ -1062,6 +1069,7 @@ function renderRubricGrid(rubric,gridId){
       <span>${e.date||''} ${e.time||''}</span>
       ${e.sourceType==='voice'?'<span>🎙 аудио</span>':''}
       ${e.sourceType==='forward'?'<span>📎 переслано</span>':''}
+      <button onclick="softDeleteLib(${JSON.stringify(e.id)});this.closest('.rub-card').remove();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;padding:0.1rem 0.3rem;" title="удалить">🗑</button>
     </div>
   </div>`).join('');
 }
@@ -1251,7 +1259,10 @@ function renderTasksWithDone(){
     <div class="rub-title">${esc(e.title||'')}</div>
     ${rubFullText(e,'td'+i)}
     ${rubTags(e)}
-    <div class="rub-meta"><span>${e.date||''}</span></div>
+    <div class="rub-meta">
+      <span>${e.date||''}</span>
+      <button onclick="softDeleteLib(${JSON.stringify(e.id)});renderTasksWithDone();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;padding:0.1rem 0.3rem;" title="удалить">🗑</button>
+    </div>
   </div>`;
 
   urgentEl.innerHTML=urgent.length?urgent.map((e,i)=>renderCard(e,i,false)).join(''):'<div style="color:var(--ink-muted);font-size:0.8rem;padding:0.5rem;">пусто</div>';

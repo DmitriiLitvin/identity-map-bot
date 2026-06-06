@@ -199,19 +199,25 @@ async function handle(msg) {
     return;
   }
 
-  if (msg.forward_from || msg.forward_from_chat || msg.forward_sender_name) {
-    const from = msg.forward_from_chat?.title || msg.forward_from?.first_name || msg.forward_sender_name || 'неизвестно';
-    sourceType = 'forward';
-    context = `Человек переслал контент из: "${from}"`;
-    if (msg.caption) context += `\nЕго комментарий к пересланному: "${msg.caption}"`;
-    text = msg.text || msg.caption || '';
-  } else if (msg.voice || msg.audio) {
+  if (msg.voice || msg.audio) {
+    // Голосовое или пересланное голосовое — всегда транскрибируем
     await tgSend(chatId, '🎙 Транскрибирую...');
     const fileId = (msg.voice || msg.audio).file_id;
     const { buffer, filePath } = await downloadFile(fileId);
     text = await transcribe(buffer, filePath);
     sourceType = 'voice';
     context = 'Голосовая заметка, мысли вслух.';
+    if (msg.forward_from || msg.forward_from_chat || msg.forward_sender_name) {
+      const from = msg.forward_from_chat?.title || msg.forward_from?.first_name || msg.forward_sender_name || 'неизвестно';
+      sourceType = 'forward';
+      context = `Пересланное голосовое от: "${from}"`;
+    }
+  } else if (msg.forward_from || msg.forward_from_chat || msg.forward_sender_name) {
+    const from = msg.forward_from_chat?.title || msg.forward_from?.first_name || msg.forward_sender_name || 'неизвестно';
+    sourceType = 'forward';
+    context = `Человек переслал контент из: "${from}"`;
+    if (msg.caption) context += `\nЕго комментарий к пересланному: "${msg.caption}"`;
+    text = msg.text || msg.caption || '';
   } else if (msg.photo) {
     text = msg.caption || '';
     sourceType = 'photo';
