@@ -97,6 +97,7 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
 Отвечай ТОЛЬКО валидным JSON без markdown:
 {
   "rubric": "idea|dream|task|thought|resentment|admiration|quote|media|context",
+  "split": false,
   "items": [{
     "title": "название до 70 символов",
     "body": "суть 2-4 предложения",
@@ -110,6 +111,8 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
     "tags": ["тег1", "тег2"]
   }]
 }
+
+ПОЛЕ split: поставь true ТОЛЬКО если человек явно перечисляет несколько ОТДЕЛЬНЫХ независимых задач/дел — через запятую, список, или со словами "задачи", "пара задач", "несколько задач", "дела", "список". Одна мысль с подпунктами — это НЕ split. Рассуждение с несколькими аспектами — НЕ split. split=true только когда это реально список дел которые надо сделать по отдельности.
 
 РУБРИКИ:
 
@@ -232,9 +235,11 @@ async function handle(msg) {
 
     const dateShort = new Date().toLocaleDateString('ru-RU', { month:'short', year:'numeric' });
 
-    // Если несколько задач/items — сохраняем каждую отдельной записью в library
-    if (items.length > 1) {
-      const savedEntries = [];
+    // Claude сам решает разбивать или нет, на основе контекста
+    const splitRequested = result.split === true && items.length > 1;
+
+    if (splitRequested) {
+      // Каждый item → отдельная запись в library
       items.forEach((item, idx) => {
         const entry = {
           id: Date.now() + idx,
@@ -246,12 +251,11 @@ async function handle(msg) {
           emotion: item.emotion || '',
           priority: item.priority || '',
           tags: item.tags || [],
-          mediaUrls: idx === 0 ? mediaUrls : [], // ссылки крепим к первой записи
+          mediaUrls: idx === 0 ? mediaUrls : [],
           context: context || null,
           analyzedAt: new Date().toISOString()
         };
         DB.library.unshift(entry);
-        savedEntries.push(entry);
         if (rubric === 'idea') {
           DB.cards.unshift({ ...item, rubric, date: dateShort, libId: entry.id, addedAt: new Date().toISOString() });
         }
@@ -261,7 +265,7 @@ async function handle(msg) {
 
       const emoji = R_EMOJI[rubric] || '•';
       const label = R_LABEL[rubric] || rubric;
-      let reply = `${emoji} <b>${label} — ${items.length} шт.</b>\n\n`;
+      let reply = `${emoji} <b>${label} — ${items.length} шт. (разделено)</b>\n\n`;
       items.forEach(item => {
         reply += `<b>${item.title}</b>\n<i>${(item.body||'').slice(0, 100)}${(item.body||'').length > 100 ? '…' : ''}</i>\n`;
         if (item.priority === 'high') reply += `🔴 срочно\n`;
@@ -270,7 +274,7 @@ async function handle(msg) {
       await tgSend(chatId, reply.trim());
 
     } else {
-      // Одна запись — стандартная логика
+      // Стандартно — одна запись на сообщение
       const allTags = [...new Set(items.flatMap(i => i.tags || []))];
       const libEntry = {
         id: Date.now(),
