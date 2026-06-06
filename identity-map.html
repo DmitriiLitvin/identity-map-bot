@@ -1242,20 +1242,8 @@ function renderTasksWithDone(){
   const doneEl=document.getElementById('tasks-done-section');
   if(!urgentEl||!globalEl)return;
 
-  // Раскрываем multi-item задачи в отдельные карточки
-  function expandTasks(src){
-    const result=[];
-    src.forEach(e=>{
-      if(e.items&&e.items.length>1){
-        e.items.forEach((item,idx)=>{
-          result.push({...e,id:`${e.id}_${idx}`,title:item.title||e.title,body:item.body||'',text:'',priority:item.priority||e.priority||'',tags:item.tags||e.tags||[]});
-        });
-      }else{result.push(e);}
-    });
-    return result;
-  }
-  const all=expandTasks((SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&!doneIds.has(e.id)&&!deletedLibIds.has(String(e.id).split('_')[0])&&!deletedLibIds.has(e.id)));
-  const done=expandTasks((SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&doneIds.has(e.id)&&!deletedLibIds.has(e.id)));
+  const all=(SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&!doneIds.has(e.id)&&!deletedLibIds.has(e.id));
+  const done=(SRV_DATA.library||[]).filter(e=>e.rubric==='task'&&doneIds.has(e.id)&&!deletedLibIds.has(e.id));
 
   const urgent=all.filter(e=>taskCols[e.id]!=='global');
   const global=all.filter(e=>taskCols[e.id]==='global');
