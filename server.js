@@ -556,9 +556,11 @@ app.put('/api/library/:idx/rubric', (req, res) => {
   if (!auth(req, res)) return;
   const idx = parseInt(req.params.idx);
   if (idx < 0 || idx >= DB.library.length) return res.status(404).json({ error: 'not found' });
-  const { rubric, type } = req.body;
+  const { rubric, type, priority, subtype } = req.body;
   DB.library[idx].rubric = rubric;
-  if (type) DB.library[idx].type = type;
+  if (type !== undefined) DB.library[idx].type = type;
+  if (priority !== undefined) DB.library[idx].priority = priority;
+  if (subtype !== undefined) DB.library[idx].subtype = subtype;
   DB.library[idx].analyzedAt = new Date().toISOString();
   save(DB);
   res.json({ ok: true });

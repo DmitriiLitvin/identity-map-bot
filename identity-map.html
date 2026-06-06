@@ -569,25 +569,25 @@ select.fil:focus{border-color:var(--accent);}
 <div class="md">
   <h3>Редактировать запись</h3>
   <div class="fg"><label>рубрика</label>
-    <select id="le-rubric">
+    <select id="le-rubric" onchange="updateLeSubrubric()">
       <option value="idea">🔥 Идея</option>
       <option value="dream">🌙 Сон</option>
       <option value="task">🎯 Задача</option>
       <option value="thought">💭 Мысль</option>
-      <option value="resentment">😤 Обида</option>
-      <option value="admiration">✨ Восхищение</option>
-      <option value="quote">💬 Цитата</option>
+      <option value="notebook">📌 Не забыть</option>
+      <option value="birthday">🎂 День рождения</option>
       <option value="media">📖 Медиа</option>
-      <option value="context">🌀 Контекст</option>
+      <option value="quote">💬 Цитата</option>
     </select>
+  </div>
+  <div class="fg" id="le-subrubric-wrap" style="display:none">
+    <label id="le-subrubric-label">подрубрика</label>
+    <select id="le-subrubric"><option value="">—</option></select>
   </div>
   <div class="fg"><label>заголовок</label><input type="text" id="le-title"></div>
   <div class="fg"><label>суть (body)</label><textarea id="le-body" style="min-height:80px;"></textarea></div>
   <div class="fg"><label>полный текст</label><textarea id="le-text" style="min-height:100px;"></textarea></div>
   <div class="fg"><label>теги (через запятую)</label><input type="text" id="le-tags" placeholder="математика, язык, общество"></div>
-  <div class="fg"><label>приоритет (для задач)</label>
-    <select id="le-priority"><option value="">—</option><option value="high">🔴 высокий</option><option value="medium">средний</option><option value="low">низкий</option></select>
-  </div>
   <div class="macts"><button class="btncancel" id="clibedit">отмена</button><button class="btn" id="slibedit">сохранить</button></div>
 </div>
 </div>
@@ -1477,16 +1477,42 @@ document.getElementById('btn-import').onclick=async()=>{
 
 // ── LIBRARY EDIT ──
 let libEditIdx = null;
+// Подрубрики для модала редактирования
+const LE_SUBS = {
+  idea: { label:'тип идеи', opts:[['','—'],['belief','🔥 убеждение'],['question','❓ открытый вопрос'],['shifting','🔄 в движении'],['tension','⚡ противоречие'],['abandoned','💀 отказался']] },
+  task: { label:'приоритет', opts:[['','—'],['high','🔴 срочная'],['medium','⚪ обычная'],['low','🌐 глобальная']] },
+  birthday: { label:'подтип', opts:[['','—'],['person','🎂 дата ДР'],['toast','🥂 тост'],['gift','🎁 подарок']] },
+  idea_domain: { label:'область', opts:[['','—'],['love','❤ любовь'],['mind','🧠 мышление'],['society','🏛 общество'],['self','🪞 я сам'],['work','💼 работа'],['other','◦ другое']] },
+};
+window.updateLeSubrubric = () => {
+  const rub = document.getElementById('le-rubric').value;
+  const wrap = document.getElementById('le-subrubric-wrap');
+  const sel = document.getElementById('le-subrubric');
+  const lbl = document.getElementById('le-subrubric-label');
+  const sub = LE_SUBS[rub];
+  if (sub) {
+    wrap.style.display = '';
+    lbl.textContent = sub.label;
+    sel.innerHTML = sub.opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+  } else {
+    wrap.style.display = 'none';
+  }
+};
+
 window.openLibEdit = (idx) => {
   libEditIdx = idx;
   const e = SRV_DATA.library[idx];
   if (!e) return;
   document.getElementById('le-rubric').value = e.rubric || 'thought';
+  updateLeSubrubric();
+  // Восстанавливаем подрубрику
+  const subVal = e.type || e.priority || e.subtype || '';
+  const subEl = document.getElementById('le-subrubric');
+  if (subEl && subVal) subEl.value = subVal;
   document.getElementById('le-title').value = e.title || '';
   document.getElementById('le-body').value = e.body || '';
   document.getElementById('le-text').value = e.text || '';
   document.getElementById('le-tags').value = (e.tags || []).join(', ');
-  document.getElementById('le-priority').value = e.priority || '';
   document.getElementById('modal-lib-edit').classList.add('open');
 };
 document.getElementById('clibedit').onclick = () => closeModal('modal-lib-edit');
@@ -1498,13 +1524,18 @@ document.getElementById('slibedit').onclick = async () => {
   const body = document.getElementById('le-body').value.trim();
   const text = document.getElementById('le-text').value.trim();
   const tags = document.getElementById('le-tags').value.split(',').map(t => t.trim()).filter(Boolean);
-  const priority = document.getElementById('le-priority').value;
+  const subVal = document.getElementById('le-subrubric')?.value || '';
+  // Определяем куда класть подрубрику в зависимости от рубрики
+  const subPatch = {};
+  if (rubric === 'idea') { subPatch.type = subVal||undefined; }
+  else if (rubric === 'task') { subPatch.priority = subVal||undefined; }
+  else if (rubric === 'birthday') { subPatch.subtype = subVal||undefined; }
   // Обновляем локально
-  SRV_DATA.library[libEditIdx] = { ...SRV_DATA.library[libEditIdx], rubric, title, body, text, tags, priority, analyzedAt: new Date().toISOString() };
+  SRV_DATA.library[libEditIdx] = { ...SRV_DATA.library[libEditIdx], rubric, title, body, text, tags, ...subPatch, analyzedAt: new Date().toISOString() };
   saveSrvData(SRV_DATA);
   // Отправляем на сервер
   try {
-    await srvFetch(`/api/library/${libEditIdx}/rubric`, { method: 'PUT', body: JSON.stringify({ rubric }) });
+    await srvFetch(`/api/library/${libEditIdx}/rubric`, { method: 'PUT', body: JSON.stringify({ rubric, type: subPatch.type, priority: subPatch.priority, subtype: subPatch.subtype }) });
   } catch(e) { console.warn('rubric update:', e); }
   closeModal('modal-lib-edit');
   renderLibrary();
