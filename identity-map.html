@@ -297,11 +297,39 @@ select.fil:focus{border-color:var(--accent);}
 .btncancel:hover{background:var(--surface3);}
 
 @media(max-width:640px){
-  header{padding:1.2rem 1rem 1rem;flex-direction:column;align-items:flex-start;}
-  main{padding:1.3rem 1rem 3rem;}
-  nav{padding:0 1rem;}
-  .sec-head{flex-direction:column;gap:0.4rem;}
-  .sec-head p{text-align:left;}
+  header{padding:0.9rem 1rem 0.8rem;flex-direction:column;align-items:flex-start;gap:0.4rem;}
+  header h1{font-size:1.2rem;}
+  .srv-indicator{font-size:0.65rem;}
+  main{padding:1rem 0.85rem 5rem;}
+  nav{padding:0 0.5rem;}
+  nav button{padding:0.65rem 0.7rem;font-size:0.75rem;}
+  .sec-head{flex-direction:column;gap:0.3rem;}
+  .sec-head p{text-align:left;max-width:100%;}
+  .ideas-grid{grid-template-columns:1fr;}
+  .rub-grid{grid-template-columns:1fr;}
+  /* кнопки действий всегда видны на тачскрине */
+  .cacts{opacity:1;}
+  .idea-card{padding:0.85rem 1rem 0.75rem;}
+  .rub-card{padding:0.8rem 0.9rem;}
+  /* библиотека */
+  .toolbar{gap:0.35rem;}
+  .lib-entry{padding:0.75rem 0.8rem;}
+  /* чат */
+  .chat-wrap{height:calc(100svh - 210px);min-height:300px;}
+  .chat-input-row textarea{height:48px;font-size:0.85rem;}
+  .chat-hist-chip{font-size:0.65rem;padding:0.18rem 0.5rem;}
+  /* модал */
+  .md{padding:1.2rem 1.1rem;max-height:95svh;}
+  /* задачи */
+  .tasks-col{padding:0.6rem;}
+  /* статистика */
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  /* toolbar wrapping */
+  select.fil{font-size:0.75rem;padding:0.35rem 0.5rem;}
+  .btn{padding:0.4rem 0.75rem;font-size:0.75rem;}
+  /* скрыть трансформ-эффекты чтобы не лагало */
+  .idea-card:hover{transform:none;}
+  .rub-card:hover{transform:none;}
 }
 </style>
 </head>
