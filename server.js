@@ -31,7 +31,7 @@ async function connectMongo() {
   }
 }
 
-const EMPTY_DB = () => ({ library: [], cards: [], events: [], beliefs: [], intro: null, birthdays: [], notified: [] });
+const EMPTY_DB = () => ({ library: [], cards: [], events: [], beliefs: [], intro: null, birthdays: [], notified: [], appointments: [], works: [] });
 
 async function load() {
   if (!mongoCol) return EMPTY_DB();
@@ -39,7 +39,7 @@ async function load() {
     const doc = await mongoCol.findOne({ _id: 'main' });
     if (!doc) return EMPTY_DB();
     const { _id, ...data } = doc;
-    return { library:[], cards:[], events:[], beliefs:[], intro:null, ...data };
+    return { library:[], cards:[], events:[], beliefs:[], intro:null, birthdays:[], notified:[], appointments:[], works:[], ...data };
   } catch(e) {
     console.error('Load error:', e.message);
     return EMPTY_DB();
@@ -96,7 +96,7 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
 
 Отвечай ТОЛЬКО валидным JSON без markdown:
 {
-  "rubric": "idea|dream|task|thought|notebook|birthday|media|quote",
+  "rubric": "idea|dream|task|thought|notebook|birthday|event|shopping|media|quote",
   "split": false,
   "birthdayName": "",
   "birthdayDay": null,
@@ -104,6 +104,13 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
   "birthdayYear": null,
   "toastFor": "",
   "giftFor": "",
+  "eventName": "",
+  "eventDay": null,
+  "eventMonth": null,
+  "eventYear": null,
+  "eventTime": "",
+  "artType": "",
+  "workTitle": "",
   "items": [{
     "title": "название до 70 символов",
     "body": "суть 2-4 предложения",
@@ -121,7 +128,11 @@ const SYSTEM = `Ты анализируешь личные сообщения ч
 
 РУБРИКИ:
 
-TASK (задача) — нужно, надо, сделать, купить, позвонить, планирую. priority: high=срочно, medium=обычное, low=когда-нибудь.
+TASK (задача) — действие/дело которое надо сделать: позвонить, отправить, починить, сходить, записаться, планирую. priority: high=срочно, medium=обычное, low=когда-нибудь. НО: если это покупка вещи/продукта — это SHOPPING, не task.
+
+SHOPPING (покупки) — нужно КУПИТЬ конкретную вещь/продукт/товар: "купить молоко", "нужен новый зонт", "заказать наушники", "в магазин: хлеб, яйца". Список покупок. items[0].title = что купить. priority: high если "важное/серьёзное/дорогое", иначе medium.
+
+EVENT (мероприятие) — событие с датой в будущем: встреча, концерт, приём, поездка, дедлайн, выставка, у врача в среду. Заполни eventName, eventDay, eventMonth, eventYear (если есть), eventTime (если есть, "19:00"). items[0].title = название события.
 
 IDEA — философская мысль, убеждение о жизни, наблюдение о мире. Требует type и domain.
 
@@ -132,7 +143,9 @@ NOTEBOOK (не забыть) — факт, пароль, адрес, число,
 BIRTHDAY (день рождения) — если упоминается дата ДР человека → заполни birthdayName, birthdayDay, birthdayMonth, birthdayYear (если есть). Если это тост/поздравление → заполни toastFor + текст в items[0].body. Если идея подарка → заполни giftFor + текст в items[0].body.
 
 DREAM — сон, что приснилось.
-MEDIA — книга/фильм/подкаст/статья/ссылка.
+
+MEDIA — про искусство: книга, фильм, кино, картина/живопись, актёр, подкаст, статья, ссылка. Если можешь — заполни artType ("film"=фильм/кино, "book"=книга/литература, "painting"=картина/живопись, "other"=прочее) и workTitle (название произведения: фильма/книги/картины, если упоминается).
+
 QUOTE — пересланный чужой контент + комментарий.
 
 Если непонятно — thought.`;
@@ -142,7 +155,7 @@ async function analyze(text, context = '') {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 1500, system: SYSTEM, messages: [{ role: 'user', content: msg }] })
+    body: JSON.stringify({ model: 'claude-opus-4-8', max_tokens: 1500, system: SYSTEM, messages: [{ role: 'user', content: msg }] })
   });
   const data = await r.json();
   if (data.error) { console.error('Claude API error:', JSON.stringify(data.error)); }
@@ -152,8 +165,8 @@ async function analyze(text, context = '') {
   catch(e) { console.error('JSON parse error:', e.message, 'raw:', raw.slice(0, 200)); return { rubric: 'thought', items: [{ title: text.slice(0, 60), body: text }] }; }
 }
 
-const R_EMOJI = { idea:'🔥', dream:'🌙', task:'🎯', thought:'💭', resentment:'😤', admiration:'✨', quote:'💬', media:'📖', context:'🌀' };
-const R_LABEL = { idea:'Идея', dream:'Сон', task:'Задача', thought:'Мысль', resentment:'Обида', admiration:'Восхищение', quote:'Цитата', media:'Медиа', context:'Контекст' };
+const R_EMOJI = { idea:'🔥', dream:'🌙', task:'🎯', thought:'💭', notebook:'📌', birthday:'🎂', event:'📅', shopping:'🛒', resentment:'😤', admiration:'✨', quote:'💬', media:'🎨', context:'🌀' };
+const R_LABEL = { idea:'Идея', dream:'Сон', task:'Задача', thought:'Мысль', notebook:'Не забыть', birthday:'День рождения', event:'Мероприятие', shopping:'Покупка', resentment:'Обида', admiration:'Восхищение', quote:'Цитата', media:'Искусство', context:'Контекст' };
 
 async function handle(msg) {
   const chatId = msg.chat.id;
@@ -166,7 +179,7 @@ async function handle(msg) {
   if (msg.text?.startsWith('/')) {
     const cmd = msg.text.split(' ')[0];
     if (cmd === '/start') {
-      await tgSend(chatId, `👋 <b>Привет! Я твой личный дневник.</b>\n\nПросто пиши или диктуй — разберу и сохраню в нужную рубрику.\n\n🔥 Идеи & убеждения\n🌙 Сны\n🎯 Задачи\n💭 Мысли вслух\n😤 Обиды\n✨ Восхищения\n💬 Чужое + комментарий\n📖 Книги & фильмы\n🌀 Контекст\n\n<b>Форматы:</b> текст, голосовое 🎙, пересланное с комментарием\n\n/stats /last /tasks /dreams`);
+      await tgSend(chatId, `👋 <b>Привет! Я твой личный дневник.</b>\n\nПросто пиши или диктуй — разберу и сохраню в нужную рубрику.\n\n🔥 Идеи & убеждения\n🌙 Сны\n🎯 Задачи\n📌 Не забыть\n🎂 Дни рождения\n📅 Мероприятия (напомню за 3/1/0 дн)\n🛒 Покупки\n💭 Мысли вслух\n🎨 Искусство (кино, книги, живопись)\n💬 Чужое + комментарий\n\n<b>Форматы:</b> текст, голосовое 🎙, пересланное с комментарием\n\n/stats /last /tasks /events /dreams`);
       return;
     }
     if (cmd === '/stats') {
@@ -196,6 +209,20 @@ async function handle(msg) {
       if (!dreams.length) { await tgSend(chatId, 'Снов пока нет.'); return; }
       const lines = dreams.map(e => `🌙 <b>${e.title||'Сон'}</b>\n${e.date}\n<i>${e.body?.slice(0,100)||''}...</i>`).join('\n\n');
       await tgSend(chatId, lines);
+      return;
+    }
+    if (cmd === '/events') {
+      const upcoming = (DB.appointments||[])
+        .map(a => ({ ...a, days: getDaysUntil(a.day, a.month) }))
+        .sort((x,y) => x.days - y.days)
+        .slice(0, 10);
+      if (!upcoming.length) { await tgSend(chatId, 'Мероприятий пока нет. Напиши «концерт 25 июля в 19:00».'); return; }
+      const lines = upcoming.map(a => {
+        const when = `${a.day} ${MONTHS_RU[a.month-1]}${a.time?', '+a.time:''}`;
+        const left = a.days===0?'сегодня':a.days===1?'завтра':`через ${a.days} дн`;
+        return `📅 <b>${a.title}</b> — ${when} <i>(${left})</i>`;
+      }).join('\n');
+      await tgSend(chatId, `<b>Ближайшие мероприятия:</b>\n${lines}`);
       return;
     }
     return;
@@ -230,8 +257,9 @@ async function handle(msg) {
 
   if (!text.trim()) return;
 
-  // Проверяем напоминания о ДР при каждом сообщении
+  // Проверяем напоминания о ДР и мероприятиях при каждом сообщении
   checkBirthdayReminders(chatId).catch(()=>{});
+  checkEventReminders(chatId).catch(()=>{});
 
   await tgSend(chatId, '⏳ Анализирую...');
 
@@ -285,6 +313,40 @@ async function handle(msg) {
       DB.library.unshift(bdayEntry);
       save(DB);
       await tgSend(chatId, reply || '🎂 Сохранено');
+      return;
+    }
+
+    // ── EVENT (мероприятие) — отдельная обработка ──
+    if (rubric === 'event' && result.eventDay && result.eventMonth) {
+      const appt = {
+        id: Date.now(),
+        title: result.eventName || items[0]?.title || text.slice(0, 60),
+        day: result.eventDay, month: result.eventMonth,
+        year: result.eventYear || null,
+        time: result.eventTime || '',
+        note: items[0]?.body || '',
+        createdAt: new Date().toISOString()
+      };
+      DB.appointments = DB.appointments || [];
+      DB.appointments.push(appt);
+      const eventEntry = {
+        id: Date.now() + 1,
+        date: dateStr, time: timeStr,
+        sourceType, rubric: 'event',
+        text,
+        title: appt.title,
+        body: items[0]?.body || '',
+        eventDay: appt.day, eventMonth: appt.month, eventYear: appt.year, eventTime: appt.time,
+        apptId: appt.id,
+        tags: items[0]?.tags || [],
+        analyzedAt: new Date().toISOString()
+      };
+      DB.library.unshift(eventEntry);
+      save(DB);
+      const daysLeft = getDaysUntil(appt.day, appt.month);
+      let reply = `📅 <b>${appt.title}</b> — ${appt.day} ${MONTHS_RU[appt.month-1]}${appt.year?' '+appt.year:''}${appt.time?', '+appt.time:''}\n`;
+      reply += daysLeft === 0 ? '🔔 Сегодня!' : daysLeft === 1 ? '🔔 Завтра!' : `🔔 Через ${daysLeft} дн.`;
+      await tgSend(chatId, reply);
       return;
     }
 
@@ -347,6 +409,8 @@ async function handle(msg) {
         mediaUrls,
         context: context || null,
         items,
+        artType: rubric === 'media' ? (result.artType || '') : undefined,
+        workTitle: rubric === 'media' ? (result.workTitle || '') : undefined,
         analyzedAt: new Date().toISOString()
       };
       DB.library.unshift(libEntry);
@@ -417,6 +481,17 @@ app.delete('/api/cards/:idx', (req, res) => {
 app.delete('/api/library/:idx', (req, res) => {
   if (!auth(req,res)) return;
   DB.library.splice(parseInt(req.params.idx), 1); save(DB); res.json({ ok: true });
+});
+// Надёжное удаление по id (индекс клиента не совпадает с серверным после сортировки/мёржа)
+app.delete('/api/library/by-id/:id', (req, res) => {
+  if (!auth(req,res)) return;
+  const id = Number(req.params.id);
+  const before = DB.library.length;
+  DB.library = DB.library.filter(e => e.id !== id);
+  // подчищаем связанные карточки-идеи
+  DB.cards = (DB.cards || []).filter(c => c.libId !== id);
+  save(DB);
+  res.json({ ok: true, removed: before - DB.library.length });
 });
 
 // Bulk import endpoint
@@ -566,6 +641,39 @@ app.put('/api/library/:idx/rubric', (req, res) => {
   res.json({ ok: true });
 });
 
+// Надёжное обновление записи по id: рубрика, подтип И текстовые поля.
+// Раньше клиент слал только рубрику по индексу — правки title/body/text/tags терялись при следующем пуле.
+app.put('/api/library/by-id/:id', (req, res) => {
+  if (!auth(req, res)) return;
+  const id = Number(req.params.id);
+  const e = DB.library.find(x => x.id === id);
+  if (!e) return res.status(404).json({ error: 'not found' });
+  const { rubric, type, priority, subtype, title, body, text, tags, bucket, linkedName, workId, artType, noteKind } = req.body;
+  if (rubric !== undefined) e.rubric = rubric;
+  if (type !== undefined) e.type = type;
+  if (priority !== undefined) e.priority = priority;
+  if (subtype !== undefined) e.subtype = subtype;
+  if (title !== undefined) e.title = title;
+  if (body !== undefined) e.body = body;
+  if (text !== undefined) e.text = text;
+  if (tags !== undefined) e.tags = tags;
+  if (bucket !== undefined) e.bucket = bucket;
+  if (linkedName !== undefined) e.linkedName = linkedName;
+  if (workId !== undefined) e.workId = workId;
+  if (artType !== undefined) e.artType = artType;
+  if (noteKind !== undefined) e.noteKind = noteKind;
+  e.analyzedAt = new Date().toISOString();
+  // синхронизируем связанную карточку-идею, если есть
+  const card = (DB.cards || []).find(c => c.libId === id);
+  if (card) {
+    if (title !== undefined) card.title = title;
+    if (body !== undefined) card.body = body;
+    if (type !== undefined) card.type = type;
+  }
+  save(DB);
+  res.json({ ok: true });
+});
+
 // ── BIRTHDAYS API ──
 app.get('/api/birthdays', (req, res) => { if (!auth(req,res)) return; res.json(DB.birthdays||[]); });
 app.post('/api/birthdays', (req, res) => {
@@ -594,6 +702,46 @@ app.put('/api/birthdays/:id/gift', (req, res) => {
   const b = (DB.birthdays||[]).find(x=>x.id===parseInt(req.params.id));
   if (!b) return res.status(404).json({error:'not found'});
   b.gifts = b.gifts||[]; b.gifts.push({id:Date.now(),text:req.body.text,addedAt:new Date().toISOString()});
+  save(DB); res.json({ok:true});
+});
+
+// ── МЕРОПРИЯТИЯ API ──
+app.get('/api/appointments', (req,res)=>{ if(!auth(req,res))return; res.json(DB.appointments||[]); });
+app.post('/api/appointments', (req,res)=>{
+  if(!auth(req,res))return;
+  const b=req.body;
+  if(!b.title||!b.day||!b.month) return res.status(400).json({error:'title, day, month required'});
+  DB.appointments=DB.appointments||[];
+  if(b.id){ const ex=DB.appointments.find(x=>x.id===b.id); if(ex){ Object.assign(ex,b); save(DB); return res.json({ok:true,id:ex.id}); } }
+  const appt={ id:Date.now(), title:b.title, day:b.day, month:b.month, year:b.year||null, time:b.time||'', note:b.note||'', createdAt:new Date().toISOString() };
+  DB.appointments.push(appt);
+  save(DB); res.json({ok:true,id:appt.id});
+});
+app.delete('/api/appointments/:id', (req,res)=>{
+  if(!auth(req,res))return;
+  const id=Number(req.params.id);
+  DB.appointments=(DB.appointments||[]).filter(a=>a.id!==id);
+  DB.library=DB.library.filter(e=>!(e.rubric==='event'&&e.apptId===id));
+  save(DB); res.json({ok:true});
+});
+
+// ── ПРОИЗВЕДЕНИЯ (works) API для вкладки «Искусство» ──
+app.get('/api/works', (req,res)=>{ if(!auth(req,res))return; res.json(DB.works||[]); });
+app.post('/api/works', (req,res)=>{
+  if(!auth(req,res))return;
+  const b=req.body;
+  if(!b.title) return res.status(400).json({error:'title required'});
+  DB.works=DB.works||[];
+  if(b.id){ const ex=DB.works.find(x=>x.id===b.id); if(ex){ Object.assign(ex,b); save(DB); return res.json({ok:true,id:ex.id}); } }
+  const w={ id:Date.now(), title:b.title, type:b.type||'other', author:b.author||'', year:b.year||'', cover:b.cover||'', createdAt:new Date().toISOString() };
+  DB.works.push(w);
+  save(DB); res.json({ok:true,id:w.id});
+});
+app.delete('/api/works/:id', (req,res)=>{
+  if(!auth(req,res))return;
+  const id=Number(req.params.id);
+  DB.works=(DB.works||[]).filter(w=>w.id!==id);
+  (DB.library||[]).forEach(e=>{ if(e.workId===id) e.workId=null; });
   save(DB); res.json({ok:true});
 });
 
@@ -684,6 +832,27 @@ async function checkBirthdayReminders(chatId) {
   }
 }
 
+async function checkEventReminders(chatId) {
+  if (!DB.appointments?.length) return;
+  const todayKey = new Date().toISOString().slice(0,10);
+  for (const a of DB.appointments) {
+    const days = getDaysUntil(a.day, a.month);
+    if (![0,1,3].includes(days)) continue;
+    const notifyKey = `ev_${a.id}_${todayKey}_${days}`;
+    if ((DB.notified||[]).includes(notifyKey)) continue;
+    const when = `${a.day} ${MONTHS_RU[a.month-1]}${a.time?', '+a.time:''}`;
+    let msg;
+    if (days===0) msg = `📅 Сегодня: <b>${a.title}</b> (${when})`;
+    else if (days===1) msg = `📅 Завтра: <b>${a.title}</b> — ${when}`;
+    else msg = `📅 Через 3 дня: <b>${a.title}</b> — ${when}`;
+    await tgSend(chatId, msg);
+    if (!DB.notified) DB.notified = [];
+    DB.notified.push(notifyKey);
+    if (DB.notified.length > 200) DB.notified = DB.notified.slice(-100);
+    save(DB);
+  }
+}
+
 async function setupWebhook() {
   const url = process.env.WEBHOOK_URL;
   if (!url) { console.log('WEBHOOK_URL не задан'); return; }
@@ -699,6 +868,7 @@ async function setupWebhook() {
       {command:'stats', description:'📊 Статистика записей'},
       {command:'last', description:'🗂 Последние записи'},
       {command:'tasks', description:'🎯 Активные задачи'},
+      {command:'events', description:'📅 Ближайшие мероприятия'},
       {command:'dreams', description:'🌙 Последние сны'},
     ]})
   });
