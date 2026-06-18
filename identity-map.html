@@ -369,6 +369,21 @@ select.fil:focus{border-color:var(--accent);}
 .art-ws-grouplabel{font-size:0.66rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.6rem;display:flex;align-items:center;gap:0.5rem;}
 .art-ws-grouplabel::after{content:'';flex:1;height:1px;background:var(--border);}
 .art-add-note-box{background:var(--surface);border:1px dashed var(--border2);border-radius:10px;padding:0.9rem 1rem;margin-bottom:1.4rem;}
+/* музыка */
+.art-work.music{background:linear-gradient(150deg,#102a28 0%,#13233a 55%,#1a1530 100%);color:#d9f5ee;}
+.art-work.music::before{content:'♪';position:absolute;left:11px;top:7px;font-size:1.5rem;opacity:0.3;}
+.music-status{font-size:0.64rem;font-family:'JetBrains Mono',monospace;padding:0.15rem 0.55rem;border-radius:20px;border:1px solid var(--border2);white-space:nowrap;}
+.music-status.plan{background:rgba(96,165,250,0.15);color:#93c5fd;border-color:rgba(96,165,250,0.3);}
+.music-status.learning{background:rgba(251,191,36,0.15);color:#fde68a;border-color:rgba(251,191,36,0.3);}
+.music-status.learned{background:rgba(52,211,153,0.15);color:#6ee7b7;border-color:rgba(52,211,153,0.3);}
+.sheets-row{display:flex;gap:0.7rem;flex-wrap:wrap;}
+.sheet-tile{position:relative;width:130px;min-height:90px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;background:var(--surface);}
+.sheet-tile img{width:100%;height:90px;object-fit:cover;display:block;background:#fff;}
+.sheet-tile.pdf{align-items:center;justify-content:center;padding:0.6rem 0.4rem;}
+.sheet-tile .sheet-ic{font-size:2rem;text-align:center;}
+.sheet-tile .sheet-name{font-size:0.62rem;color:var(--text-soft);padding:0.25rem 0.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;}
+.sheet-del{position:absolute;top:0.2rem;right:0.2rem;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:0.7rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.note-chat{display:flex;flex-direction:column;gap:0.6rem;max-height:340px;overflow-y:auto;padding:0.3rem;}
 /* ── МЕРОПРИЯТИЯ ── */
 .appt-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.7rem;border-left:3px solid var(--accent);}
 .appt-card.soon{border-left-color:var(--red);}
@@ -611,6 +626,7 @@ select.fil:focus{border-color:var(--accent);}
     <div id="art-grid"></div>
   </div>
   <div id="art-workspace" style="display:none;"></div>
+  <input type="file" id="sheet-file-input" accept="image/*,.pdf" style="display:none;">
 </div>
 
 <!-- EVENTS / МЕРОПРИЯТИЯ -->
@@ -808,8 +824,11 @@ select.fil:focus{border-color:var(--accent);}
     </select>
   </div>
   <div class="fg"><label>название</label><input type="text" id="wk-title" placeholder="Сталкер, Идиот…"></div>
-  <div class="fg"><label>автор / режиссёр (необязательно)</label><input type="text" id="wk-author" placeholder="Тарковский, Достоевский…"></div>
+  <div class="fg"><label>автор / режиссёр / композитор (необязательно)</label><input type="text" id="wk-author" placeholder="Тарковский, Достоевский, Шопен…"></div>
   <div class="fg"><label>год (необязательно)</label><input type="text" id="wk-year" placeholder="1979"></div>
+  <div class="fg" id="wk-status-wrap"><label>статус (для музыки / фортепиано)</label>
+    <select id="wk-status"><option value="">—</option><option value="planning">🎯 планирую выучить</option><option value="learning">🎹 учу сейчас</option><option value="learned">✅ играю</option></select>
+  </div>
   <div class="macts"><button class="btncancel" id="cwork">отмена</button><button class="btn" id="swork">сохранить</button></div>
 </div>
 </div>
@@ -1542,13 +1561,15 @@ function rubFullText(e,uid){
 window.togRub=(id,btn)=>{const el=document.getElementById(id);if(!el)return;const hidden=el.style.display==='none';el.style.display=hidden?'block':'none';btn.textContent=hidden?'свернуть':'показать оригинал';};
 
 // ── ИСКУССТВО (кино / книги / живопись) ──
-const ART_TYPE_META={film:{emoji:'🎬',label:'Кино'},book:{emoji:'📚',label:'Книга'},painting:{emoji:'🖼',label:'Живопись'},other:{emoji:'🎨',label:'Другое'}};
+const ART_TYPE_META={film:{emoji:'🎬',label:'Кино'},book:{emoji:'📚',label:'Книга'},painting:{emoji:'🖼',label:'Живопись'},music:{emoji:'🎵',label:'Музыка'},other:{emoji:'🎨',label:'Другое'}};
 const ART_KINDS={
   film:[['frame','🎞 кадр'],['scene','🎬 сцена'],['concept','💡 концепт'],['acting','🎭 актёрская игра'],['quote','💬 цитата'],['note','✍ мысль']],
   book:[['quote','💬 цитата / подчёркивание'],['concept','💡 идея'],['character','👤 персонаж'],['note','✍ мысль']],
   painting:[['detail','🔍 деталь'],['concept','💡 идея'],['note','✍ мысль']],
+  music:[['lyrics','🎤 слова / текст'],['fragment','🎵 фрагмент / мотив'],['practice','🎹 разбор / практика'],['note','✍ мысль']],
   other:[['note','✍ заметка'],['quote','💬 цитата']]
 };
+const MUSIC_STATUS={planning:{label:'🎯 планирую выучить',cls:'plan'},learning:{label:'🎹 учу сейчас',cls:'learning'},learned:{label:'✅ играю',cls:'learned'}};
 function artKindLabel(type,kind){const list=ART_KINDS[type]||ART_KINDS.other;return (list.find(k=>k[0]===kind)||[])[1]||'✍ заметка';}
 let WORKS=[];
 let worksLoaded=false;
@@ -1582,7 +1603,7 @@ function renderArtGallery(){
   document.getElementById('art-workspace').style.display='none';
   const q=(document.getElementById('art-search')?.value||'').toLowerCase().trim();
   // субнавигация
-  const subs=[['all','Всё'],['film','🎬 Кино'],['book','📚 Книги'],['painting','🖼 Живопись'],['other','🎨 Другое']];
+  const subs=[['all','Всё'],['film','🎬 Кино'],['book','📚 Книги'],['music','🎵 Музыка'],['painting','🖼 Живопись'],['other','🎨 Другое']];
   document.getElementById('art-subnav').innerHTML=subs.map(([v,l])=>`<div class="art-pill${artSub===v?' sel':''}" onclick="setArtSub('${v}')">${l}</div>`).join('');
   const grid=document.getElementById('art-grid');
   let works=WORKS.filter(w=>artSub==='all'||w.type===artSub);
@@ -1597,11 +1618,13 @@ function renderArtGallery(){
       const type=w.type||'other';const tm=ART_TYPE_META[type]||ART_TYPE_META.other;
       const cnt=artNotesFor(w.id).length;
       const meta=[w.author,w.year].filter(Boolean).join(' · ');
+      const sheetCnt=(w.sheets||[]).length;
       return`<div class="art-work ${type}" onclick="openArtWork(${w.id})">
-        <span class="aw-count">${cnt} ${cnt===1?'заметка':cnt>=2&&cnt<=4?'заметки':'заметок'}</span>
+        <span class="aw-count">${cnt} ${cnt===1?'заметка':cnt>=2&&cnt<=4?'заметки':'заметок'}${sheetCnt?` · 🎼${sheetCnt}`:''}</span>
         <div class="aw-type">${tm.emoji} ${tm.label}</div>
         <div class="aw-title">${esc(w.title)}</div>
         ${meta?`<div class="aw-meta">${esc(meta)}</div>`:''}
+        ${type==='music'&&w.status&&MUSIC_STATUS[w.status]?`<div style="margin-top:0.45rem;"><span class="music-status ${MUSIC_STATUS[w.status].cls}">${MUSIC_STATUS[w.status].label}</span></div>`:''}
       </div>`;
     }).join('')+`</div>`;
   }
@@ -1657,6 +1680,7 @@ function renderArtWorkspace(){
     groupsHtml+=`<div class="art-ws-group"><div class="art-ws-grouplabel">прочее · ${other.length}</div>`+
       other.map(n=>`<div class="art-note-card" style="margin-bottom:0.6rem;"><div class="rub-body" style="white-space:pre-wrap;">${esc(n.body||n.text||'')}</div></div>`).join('')+`</div>`;
   }
+  const statusBadge=(type==='music'&&w.status&&MUSIC_STATUS[w.status])?`<div style="margin-top:0.4rem;"><span class="music-status ${MUSIC_STATUS[w.status].cls}">${MUSIC_STATUS[w.status].label}</span></div>`:'';
   ws.innerHTML=`
     <div class="art-ws-head ${type}" style="${artHeadStyle(type)}">
       <button class="awh-back" onclick="closeArtWork()">← все произведения</button>
@@ -1665,15 +1689,21 @@ function renderArtWorkspace(){
         <div class="awh-title">${esc(w.title)}</div>
         ${meta?`<div class="awh-meta">${esc(meta)}</div>`:''}
         <div class="awh-meta">${notes.length} ${notes.length===1?'заметка':notes.length>=2&&notes.length<=4?'заметки':'заметок'}</div>
+        ${statusBadge}
       </div>
-      <button onclick="deleteWork(${w.id})" title="удалить произведение" style="background:rgba(0,0,0,0.3);color:#fff;border:none;border-radius:20px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.72rem;align-self:flex-start;margin-top:1.6rem;">🗑</button>
+      <div style="display:flex;gap:0.4rem;align-self:flex-start;margin-top:1.6rem;">
+        <button onclick="openWorkModal(${w.id})" title="редактировать" style="background:rgba(0,0,0,0.3);color:#fff;border:none;border-radius:20px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.72rem;">✎</button>
+        <button onclick="deleteWork(${w.id})" title="удалить произведение" style="background:rgba(0,0,0,0.3);color:#fff;border:none;border-radius:20px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.72rem;">🗑</button>
+      </div>
     </div>
     <div class="art-add-note-box">
       <button class="btn" onclick="openArtNote(${w.id})">+ добавить заметку</button>
-      <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.6rem;">кадр, сцена, цитата, мысль об актёрах…</span>
+      <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.6rem;">${type==='music'?'слова, фрагмент, разбор…':'кадр, сцена, цитата, мысль об актёрах…'}</span>
     </div>
+    ${type==='music'?artMusicSection(w):''}
     ${groupsHtml||'<div class="empty"><p>заметок пока нет — добавь первую</p></div>'}
   `;
+  if(type==='music')loadSheetImages(w.sheets||[]);
 }
 function artHeadStyle(type){
   const m={film:'linear-gradient(150deg,#1c1230,#241a3d 60%,#10243a)',book:'linear-gradient(150deg,#3a2a18,#2c2113 55%,#1f1a10)',painting:'linear-gradient(150deg,#3a1530,#2a1840 55%,#15203a)',other:'linear-gradient(150deg,#22263a,#1c2030)'};
@@ -1696,10 +1726,16 @@ window.assignLoose=async(id)=>{
 };
 
 // ── модал «произведение» ──
-window.openWorkModal=()=>{
-  document.getElementById('work-modal-title').textContent='Новое произведение';
-  document.getElementById('wk-type').value='film';
-  ['wk-title','wk-author','wk-year'].forEach(id=>document.getElementById(id).value='');
+let workEditId=null;
+window.openWorkModal=(editId)=>{
+  workEditId=editId||null;
+  const w=editId?WORKS.find(x=>x.id===editId):null;
+  document.getElementById('work-modal-title').textContent=w?'Редактировать произведение':'Новое произведение';
+  document.getElementById('wk-type').value=w?(w.type||'film'):'film';
+  document.getElementById('wk-title').value=w?w.title:'';
+  document.getElementById('wk-author').value=w?(w.author||''):'';
+  document.getElementById('wk-year').value=w?(w.year||''):'';
+  document.getElementById('wk-status').value=w?(w.status||''):'';
   document.getElementById('modal-work').classList.add('open');
 };
 document.getElementById('art-add-work-btn').onclick=()=>openWorkModal();
@@ -1707,13 +1743,16 @@ document.getElementById('cwork').onclick=()=>closeModal('modal-work');
 document.getElementById('modal-work').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-work');});
 document.getElementById('swork').onclick=async()=>{
   const title=document.getElementById('wk-title').value.trim();if(!title)return;
-  const body={title,type:document.getElementById('wk-type').value,author:document.getElementById('wk-author').value.trim(),year:document.getElementById('wk-year').value.trim()};
+  const body={title,type:document.getElementById('wk-type').value,author:document.getElementById('wk-author').value.trim(),year:document.getElementById('wk-year').value.trim(),status:document.getElementById('wk-status').value};
+  if(workEditId)body.id=workEditId;
   try{
     const r=await srvFetch('/api/works',{method:'POST',body:JSON.stringify(body)});
     await loadWorks();
     closeModal('modal-work');
-    if(r&&r.id){artWorkspaceId=r.id;renderArtWorkspace();}else renderArtGallery();
-    showStatus('srv-status','✓ произведение добавлено','ok');
+    const openId=workEditId||(r&&r.id);
+    workEditId=null;
+    if(openId){artWorkspaceId=openId;renderArtWorkspace();}else renderArtGallery();
+    showStatus('srv-status','✓ сохранено','ok');
   }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
 };
 window.deleteWork=async(id)=>{
@@ -1762,6 +1801,119 @@ document.getElementById('snote').onclick=async()=>{
 };
 document.getElementById('art-search')?.addEventListener('input',()=>{if(!artWorkspaceId)renderArtGallery();});
 document.getElementById('btn-sync-media')?.addEventListener('click',()=>loadWorks().then(()=>pullFromServer()));
+
+// ── МУЗЫКА: ноты (PDF/JPEG) + чат по нотам через Claude vision ──
+const sheetCache={}; // fileId -> dataURL (кеш, чтобы не тянуть повторно)
+let artChatByWork={}; // workId -> [{role,content}]
+function artMusicSection(w){
+  const sheets=w.sheets||[];
+  const sheetsHtml=sheets.length?sheets.map(s=>{
+    const isPdf=(s.mime||'').includes('pdf');
+    return `<div class="sheet-tile${isPdf?' pdf':''}" onclick="openSheet(${s.id})" title="${esc(s.name||'ноты')}">
+      ${isPdf?'<div class="sheet-ic">📄</div>':`<img id="sheet-img-${s.id}" alt="ноты">`}
+      <div class="sheet-name">${esc(s.name||(isPdf?'ноты.pdf':'ноты'))}</div>
+      <button class="sheet-del" onclick="event.stopPropagation();delSheet(${w.id},${s.id})">✕</button>
+    </div>`;
+  }).join(''):'<div style="color:var(--text-muted);font-size:0.8rem;padding:0.3rem 0;">нот пока нет — прикрепи PDF или фото</div>';
+  return `
+    <div class="art-ws-group">
+      <div class="art-ws-grouplabel">🎼 ноты</div>
+      <div class="sheets-row">${sheetsHtml}</div>
+      <div style="margin-top:0.7rem;display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;">
+        <button class="btn ghost" onclick="document.getElementById('sheet-file-input').click()">📎 прикрепить ноты (PDF/JPEG)</button>
+        <span id="sheet-upload-status" style="font-size:0.78rem;color:var(--text-muted);"></span>
+      </div>
+    </div>
+    <div class="art-ws-group">
+      <div class="art-ws-grouplabel">🎹 разбор нот с ИИ</div>
+      <div class="note-chat" id="note-chat-msgs">${renderArtChatLog()}</div>
+      <div class="chat-input-row" style="padding-top:0.6rem;border-top:none;margin-top:0.5rem;">
+        <textarea id="note-chat-input" placeholder="${sheets.length?'спроси про конкретные такты, аккорды, аппликатуру…':'сначала прикрепи ноты, потом спрашивай'}" style="min-height:46px;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendArtChat();}"></textarea>
+        <button class="btn chat-send" onclick="sendArtChat()">→</button>
+      </div>
+    </div>`;
+}
+function renderArtChatLog(){
+  const log=artChatByWork[artWorkspaceId]||[];
+  if(!log.length)return '<div style="color:var(--text-muted);font-size:0.82rem;padding:0.5rem;">Прикрепи ноты и спрашивай — например «какая аппликатура в 3-м такте?» или «разбери партию левой руки».</div>';
+  return log.map(m=>m.role==='user'
+    ?`<div class="chat-msg user">${esc(m.content)}</div>`
+    :`<div class="chat-msg assistant">${esc(m.content).replace(/\n/g,'<br>')}</div>`).join('');
+}
+async function loadSheetImages(sheets){
+  for(const s of sheets){
+    if((s.mime||'').includes('pdf'))continue;
+    if(sheetCache[s.id]){const el0=document.getElementById('sheet-img-'+s.id);if(el0)el0.src=sheetCache[s.id];continue;}
+    try{
+      const f=await srvFetch('/api/files/'+s.id);
+      const url=String(f.data||'').startsWith('data:')?f.data:`data:${f.mime};base64,${f.data}`;
+      sheetCache[s.id]=url;
+      const el=document.getElementById('sheet-img-'+s.id);
+      if(el)el.src=url;
+    }catch(e){}
+  }
+}
+window.openSheet=async(id)=>{
+  let url=sheetCache[id];
+  if(!url){try{const f=await srvFetch('/api/files/'+id);url=String(f.data||'').startsWith('data:')?f.data:`data:${f.mime};base64,${f.data}`;sheetCache[id]=url;}catch(e){return;}}
+  const win=window.open();
+  if(win){
+    if(url.includes('application/pdf'))win.document.write(`<iframe src="${url}" style="border:0;width:100%;height:100vh"></iframe>`);
+    else win.document.write(`<img src="${url}" style="max-width:100%">`);
+  }
+};
+window.delSheet=async(workId,fileId)=>{
+  if(!confirm('Убрать эти ноты?'))return;
+  const w=WORKS.find(x=>x.id===workId);
+  if(w)w.sheets=(w.sheets||[]).filter(s=>s.id!==fileId);
+  delete sheetCache[fileId];
+  try{
+    await srvFetch('/api/files/'+fileId,{method:'DELETE'});
+    await srvFetch('/api/works',{method:'POST',body:JSON.stringify({id:workId,sheets:w?w.sheets:[]})});
+  }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+  renderArtWorkspace();
+};
+document.getElementById('sheet-file-input').addEventListener('change',async(ev)=>{
+  const file=ev.target.files[0];
+  ev.target.value='';
+  if(!file||artWorkspaceId===null)return;
+  if(file.size>12*1024*1024){showStatus('srv-status','файл слишком большой (макс 12 МБ)','err');return;}
+  const statusEl=document.getElementById('sheet-upload-status');
+  if(statusEl)statusEl.textContent='загружаю…';
+  try{
+    const dataUrl=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(file);});
+    const r=await srvFetch('/api/files',{method:'POST',body:JSON.stringify({mime:file.type||'image/jpeg',name:file.name,data:dataUrl,workId:artWorkspaceId})});
+    const w=WORKS.find(x=>x.id===artWorkspaceId);
+    if(w){w.sheets=w.sheets||[];w.sheets.push({id:r.id,name:r.name||file.name,mime:file.type||'image/jpeg'});sheetCache[r.id]=dataUrl;}
+    await srvFetch('/api/works',{method:'POST',body:JSON.stringify({id:artWorkspaceId,sheets:w?w.sheets:[]})});
+    if(statusEl)statusEl.textContent='';
+    renderArtWorkspace();
+  }catch(e){if(statusEl)statusEl.textContent='ошибка: '+e.message;}
+});
+window.sendArtChat=async()=>{
+  const inp=document.getElementById('note-chat-input');
+  if(!inp)return;
+  const q=inp.value.trim();if(!q)return;
+  inp.value='';
+  const w=WORKS.find(x=>x.id===artWorkspaceId);
+  const fileIds=(w?.sheets||[]).map(s=>s.id);
+  const wid=artWorkspaceId;
+  artChatByWork[wid]=artChatByWork[wid]||[];
+  artChatByWork[wid].push({role:'user',content:q});
+  const hist=artChatByWork[wid].slice(0,-1).filter(m=>!m._tmp);
+  artChatByWork[wid].push({role:'assistant',content:'…смотрю ноты…',_tmp:true});
+  const draw=()=>{const el=document.getElementById('note-chat-msgs');if(el){el.innerHTML=renderArtChatLog();el.scrollTop=el.scrollHeight;}};
+  draw();
+  try{
+    const r=await srvFetch('/api/art-chat',{method:'POST',body:JSON.stringify({question:q,fileIds,workTitle:w?.title||'',history:hist.map(m=>({role:m.role,content:m.content}))})});
+    artChatByWork[wid]=artChatByWork[wid].filter(m=>!m._tmp);
+    artChatByWork[wid].push({role:'assistant',content:r.answer});
+  }catch(e){
+    artChatByWork[wid]=artChatByWork[wid].filter(m=>!m._tmp);
+    artChatByWork[wid].push({role:'assistant',content:'Ошибка: '+e.message});
+  }
+  draw();
+};
 
 // ── МЕРОПРИЯТИЯ ──
 let APPTS=[];
