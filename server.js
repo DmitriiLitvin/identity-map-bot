@@ -79,6 +79,19 @@ async function downloadFile(fileId) {
   return { buffer: Buffer.from(await res.arrayBuffer()), filePath: fp };
 }
 
+// сохраняем присланное в Telegram фото в коллекцию files, возвращаем id
+async function storeTelegramPhoto(photoArray) {
+  if (!mongoFiles || !photoArray?.length) return null;
+  try {
+    const best = photoArray[photoArray.length - 1]; // самый крупный размер
+    const { buffer } = await downloadFile(best.file_id);
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const data = 'data:image/jpeg;base64,' + buffer.toString('base64');
+    await mongoFiles.insertOne({ _id: id, mime: 'image/jpeg', name: 'photo.jpg', data, createdAt: new Date().toISOString() });
+    return id;
+  } catch (e) { console.error('storeTelegramPhoto:', e.message); return null; }
+}
+
 async function transcribe(buffer, filePath) {
   if (!OPENAI_API_KEY) return '[голосовое — нет OpenAI ключа]';
   const form = new FormData();
@@ -184,7 +197,7 @@ async function handle(msg) {
   const dateStr = ts.toLocaleDateString('ru-RU', { day:'numeric', month:'short', year:'numeric' });
   const timeStr = ts.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
 
-  let text = '', sourceType = 'text', context = '';
+  let text = '', sourceType = 'text', context = '', photoFileId = null;
 
   if (msg.text?.startsWith('/')) {
     const cmd = msg.text.split(' ')[0];
@@ -260,7 +273,20 @@ async function handle(msg) {
   } else if (msg.photo) {
     text = msg.caption || '';
     sourceType = 'photo';
-    if (!text) { await tgSend(chatId, 'Фото без подписи — добавь текст 🙂'); return; }
+    photoFileId = await storeTelegramPhoto(msg.photo);
+    if (!text) {
+      // Фото без подписи — сохраняем как запись в «Искусство» с прикреплённой картинкой, без Claude
+      const entry = {
+        id: Date.now(), date: dateStr, time: timeStr,
+        sourceType: 'photo', rubric: 'media', artType: '',
+        text: '', title: '📷 Фото ' + dateStr, body: '',
+        images: photoFileId ? [{ id: photoFileId, mime: 'image/jpeg' }] : [],
+        analyzedAt: new Date().toISOString()
+      };
+      DB.library.unshift(entry); save(DB);
+      await tgSend(chatId, photoFileId ? '📷 Фото сохранено в «Искусство».' : '📷 Фото получено (хранилище недоступно).');
+      return;
+    }
   } else if (msg.text) {
     text = msg.text;
   } else return;
@@ -384,6 +410,7 @@ async function handle(msg) {
           tags: item.tags || [],
           mediaUrls: idx === 0 ? mediaUrls : [],
           context: context || null,
+          images: (idx === 0 && photoFileId) ? [{ id: photoFileId, mime: 'image/jpeg' }] : undefined,
           analyzedAt: new Date().toISOString()
         };
         DB.library.unshift(entry);
@@ -421,6 +448,7 @@ async function handle(msg) {
         items,
         artType: rubric === 'media' ? (result.artType || '') : undefined,
         workTitle: rubric === 'media' ? (result.workTitle || '') : undefined,
+        images: photoFileId ? [{ id: photoFileId, mime: 'image/jpeg' }] : undefined,
         analyzedAt: new Date().toISOString()
       };
       DB.library.unshift(libEntry);
@@ -658,8 +686,9 @@ app.put('/api/library/by-id/:id', (req, res) => {
   const id = Number(req.params.id);
   const e = DB.library.find(x => x.id === id);
   if (!e) return res.status(404).json({ error: 'not found' });
-  const { rubric, type, priority, subtype, title, body, text, tags, bucket, linkedName, workId, artType, noteKind } = req.body;
+  const { rubric, type, priority, subtype, title, body, text, tags, bucket, linkedName, workId, artType, noteKind, extraRubrics } = req.body;
   if (rubric !== undefined) e.rubric = rubric;
+  if (extraRubrics !== undefined) e.extraRubrics = Array.isArray(extraRubrics) ? extraRubrics : [];
   if (type !== undefined) e.type = type;
   if (priority !== undefined) e.priority = priority;
   if (subtype !== undefined) e.subtype = subtype;
