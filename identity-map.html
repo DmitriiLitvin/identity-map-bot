@@ -406,8 +406,39 @@ select.fil:focus{border-color:var(--accent);}
 .note-chat{display:flex;flex-direction:column;gap:0.6rem;max-height:340px;overflow-y:auto;padding:0.3rem;}
 /* прикреплённые фото на карточках */
 .entry-thumbs{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;}
-.entry-thumb{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:pointer;background:var(--surface3);}
+.entry-thumb{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:zoom-in;background:var(--surface3);}
 .entry-thumb:hover{border-color:var(--accent);}
+.entry-file{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.72rem;font-family:'JetBrains Mono',monospace;padding:0.3rem 0.6rem;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text-soft);cursor:pointer;}
+.entry-file:hover{border-color:var(--accent);color:var(--text);}
+.art-note-card{cursor:pointer;}
+.art-note-card:hover{border-color:var(--border2);}
+/* ── ПОЛНОЭКРАННАЯ ЗАМЕТКА ── */
+#note-detail-overlay{position:fixed;inset:0;z-index:200;background:rgba(8,9,13,0.97);overflow-y:auto;display:none;}
+#note-detail-overlay.open{display:block;}
+.nd-wrap{max-width:780px;margin:0 auto;padding:1.2rem 1.2rem 5rem;}
+.nd-top{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem;position:sticky;top:0;background:rgba(8,9,13,0.97);padding:0.7rem 0;z-index:2;border-bottom:1px solid var(--border);}
+.nd-back{background:none;border:1px solid var(--border2);color:var(--text-soft);border-radius:20px;padding:0.35rem 0.85rem;cursor:pointer;font-size:0.8rem;}
+.nd-back:hover{border-color:var(--accent);color:var(--text);}
+.nd-label{font-size:0.64rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin:1.1rem 0 0.35rem;display:block;}
+.nd-input,.nd-area{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:0.6rem 0.8rem;font-family:'Inter',sans-serif;font-size:0.95rem;outline:none;transition:border-color 0.2s;}
+.nd-input:focus,.nd-area:focus{border-color:var(--accent);}
+.nd-area{min-height:90px;line-height:1.65;resize:vertical;white-space:pre-wrap;}
+.nd-title-input{font-size:1.3rem;font-weight:700;letter-spacing:-0.01em;}
+.nd-images{display:flex;gap:0.7rem;flex-wrap:wrap;margin-top:0.5rem;}
+.nd-img{position:relative;}
+.nd-img img{width:150px;height:150px;object-fit:cover;border-radius:10px;border:1px solid var(--border2);cursor:zoom-in;background:var(--surface3);display:block;}
+.nd-img-del{position:absolute;top:0.35rem;right:0.35rem;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:0.8rem;line-height:1;}
+.nd-row{display:flex;gap:0.7rem;flex-wrap:wrap;}
+.nd-row>div{flex:1;min-width:170px;}
+.nd-actions{display:flex;gap:0.6rem;margin-top:1.8rem;flex-wrap:wrap;align-items:center;}
+#image-lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.93);display:none;align-items:center;justify-content:center;padding:1.5rem;cursor:zoom-out;}
+#image-lightbox.open{display:flex;}
+#image-lightbox img{max-width:96vw;max-height:92vh;border-radius:8px;box-shadow:0 10px 50px rgba(0,0,0,0.6);}
+#image-lightbox iframe{width:94vw;height:92vh;border:0;background:#fff;border-radius:8px;}
+@media(max-width:640px){
+  .nd-wrap{padding:0.8rem 0.8rem 5rem;}
+  .nd-img img{width:46vw;height:46vw;}
+}
 /* ── МЕРОПРИЯТИЯ ── */
 .appt-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.7rem;border-left:3px solid var(--accent);}
 .appt-card.soon{border-left-color:var(--red);}
@@ -730,6 +761,12 @@ select.fil:focus{border-color:var(--accent);}
 </div>
 
 </main>
+
+<!-- ПОЛНОЭКРАННАЯ ЗАМЕТКА (просмотр + редактирование + вложения) -->
+<div id="note-detail-overlay"></div>
+<input type="file" id="note-file-input" accept="image/*,.pdf,audio/*" style="display:none;">
+<!-- ЛАЙТБОКС для картинок/PDF -->
+<div id="image-lightbox" onclick="closeLightbox()"></div>
 
 <!-- MODAL: Library Edit -->
 <div class="mo" id="modal-lib-edit">
@@ -1658,14 +1695,14 @@ function renderArtGallery(){
   if(loose.length){
     html+=`<div class="art-ws-grouplabel" style="margin-top:1.4rem;">разрозненные заметки</div>`;
     const artTypeOpts=(cur)=>SUB_OPTS.media.map(([v,l])=>`<option value="${v}"${cur===v?' selected':''}>${l}</option>`).join('');
-    html+=`<div class="art-grid">`+loose.map((e,i)=>`<div class="art-note-card">
-      <div class="anc-kind" style="display:flex;align-items:center;gap:0.4rem;">подкатегория:
-        <select class="lib-rubric-sel" onchange="setLooseArtType(${JSON.stringify(e.id)},this.value)"><option value="">— выбрать —</option>${artTypeOpts(e.artType)}</select>
+    html+=`<div class="art-grid">`+loose.map((e,i)=>`<div class="art-note-card" onclick="openNoteDetail(${JSON.stringify(e.id)})">
+      <div class="anc-kind" style="display:flex;align-items:center;gap:0.4rem;" onclick="event.stopPropagation()">подкатегория:
+        <select class="lib-rubric-sel" onclick="event.stopPropagation()" onchange="setLooseArtType(${JSON.stringify(e.id)},this.value)"><option value="">— выбрать —</option>${artTypeOpts(e.artType)}</select>
       </div>
       <div class="rub-title">${esc(e.title||'')}</div>
       ${rubFullText(e,'al'+i)}
       <div class="rub-meta"><span>${e.date||''}</span>
-        <button onclick="event.stopPropagation();assignLoose(${JSON.stringify(e.id)})" style="margin-left:auto;background:none;border:none;color:var(--accent2);cursor:pointer;font-size:0.72rem;" title="привязать к произведению">→ в произведение</button>
+        <span style="margin-left:auto;font-size:0.68rem;color:var(--accent2);">открыть →</span>
         <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(e.id)});renderMediaTab();" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button>
       </div>
     </div>`).join('')+`</div>`;
@@ -1695,11 +1732,13 @@ function renderArtWorkspace(){
     const ofKind=notes.filter(n=>(n.noteKind||'note')===kv);
     if(!ofKind.length)return;
     groupsHtml+=`<div class="art-ws-group"><div class="art-ws-grouplabel">${kl} · ${ofKind.length}</div>`+
-      ofKind.map((n,i)=>`<div class="art-note-card" style="margin-bottom:0.6rem;">
+      ofKind.map((n,i)=>`<div class="art-note-card" style="margin-bottom:0.6rem;" onclick="openNoteDetail(${JSON.stringify(n.id)})">
         ${n.title?`<div class="rub-title">${esc(n.title)}</div>`:''}
         <div class="rub-body" style="white-space:pre-wrap;">${esc(n.body||n.text||'')}</div>
+        ${entryImagesHtml(n)}
         <div class="rub-meta"><span>${n.date||''} ${n.time||''}</span>${n.sourceType==='voice'?'<span>🎙</span>':''}
-          <button onclick="softDeleteLib(${JSON.stringify(n.id)});renderMediaTab();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button>
+          <span style="margin-left:auto;font-size:0.68rem;color:var(--accent2);">открыть →</span>
+          <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(n.id)});renderMediaTab();" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button>
         </div>
       </div>`).join('')+`</div>`;
   });
@@ -1863,8 +1902,155 @@ function entryImagesHtml(e){
   const imgs=(e&&e.images)||[];
   if(!imgs.length)return '';
   queueImageLoad();
-  return `<div class="entry-thumbs">${imgs.map(im=>`<img class="entry-thumb" data-fid="${im.id}" onclick="event.stopPropagation();openSheet(${im.id})" alt="фото" title="открыть">`).join('')}</div>`;
+  return `<div class="entry-thumbs">${imgs.map(im=>{
+    const m=im.mime||'';
+    if(m.includes('audio'))return `<span class="entry-file" onclick="event.stopPropagation();openLightbox(${im.id})" title="трек">🎵 аудио</span>`;
+    if(m.includes('pdf'))return `<span class="entry-file" onclick="event.stopPropagation();openLightbox(${im.id})" title="PDF">📄 PDF</span>`;
+    return `<img class="entry-thumb" data-fid="${im.id}" onclick="event.stopPropagation();openLightbox(${im.id})" alt="фото" title="открыть">`;
+  }).join('')}</div>`;
 }
+
+// ── ЛАЙТБОКС (картинка/PDF внутри приложения, не новое окно) ──
+window.openLightbox=async(fid)=>{
+  let url=sheetCache[fid];
+  if(!url){try{const f=await srvFetch('/api/files/'+fid);url=String(f.data||'').startsWith('data:')?f.data:`data:${f.mime};base64,${f.data}`;sheetCache[fid]=url;}catch(e){showStatus('srv-status','не удалось открыть файл','err');return;}}
+  const lb=document.getElementById('image-lightbox');
+  if(url.includes('application/pdf'))lb.innerHTML=`<iframe src="${url}"></iframe>`;
+  else if(url.includes('audio'))lb.innerHTML=`<audio controls autoplay src="${url}" onclick="event.stopPropagation()" style="width:80vw;max-width:520px;"></audio>`;
+  else lb.innerHTML=`<img src="${url}" onclick="event.stopPropagation()">`;
+  lb.classList.add('open');
+};
+window.closeLightbox=()=>{const lb=document.getElementById('image-lightbox');lb.classList.remove('open');lb.innerHTML='';};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox();}});
+
+// ── ПОЛНОЭКРАННАЯ ЗАМЕТКА: просмотр + редактирование + вложения ──
+let noteDetailId=null;
+const ND_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','media','quote'];
+function ndSubHtml(rubric,current){
+  if(!SUB_OPTS[rubric])return '';
+  const opts=[['','—'],...SUB_OPTS[rubric]].map(([v,l])=>`<option value="${v}"${v===(current||'')?' selected':''}>${l}</option>`).join('');
+  return `<span class="nd-label">подкатегория</span><select id="nd-sub" class="nd-input">${opts}</select>`;
+}
+window.openNoteDetail=(id)=>{
+  const e=(SRV_DATA.library||[]).find(x=>x.id===id);
+  if(!e)return;
+  noteDetailId=id;
+  renderNoteDetail();
+  document.getElementById('note-detail-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+};
+window.closeNoteDetail=()=>{
+  document.getElementById('note-detail-overlay').classList.remove('open');
+  document.body.style.overflow='';
+  noteDetailId=null;
+  renderTab(currentTab);
+};
+function renderNoteDetail(){
+  const e=(SRV_DATA.library||[]).find(x=>x.id===noteDetailId);
+  const ov=document.getElementById('note-detail-overlay');
+  if(!e){ov.classList.remove('open');document.body.style.overflow='';return;}
+  const rubric=e.rubric||'thought';
+  const rubricSel=ND_RUBRICS.map(k=>`<option value="${k}"${k===rubric?' selected':''}>${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`).join('');
+  const curSub=SUB_FIELD[rubric]?(e[SUB_FIELD[rubric]]||''):'';
+  const worksSel=rubric==='media'?`<div><span class="nd-label">произведение</span><select id="nd-work" class="nd-input"><option value="">— нет —</option>${WORKS.map(w=>`<option value="${w.id}"${e.workId===w.id?' selected':''}>${ART_TYPE_META[w.type]?.emoji||'🎨'} ${esc(w.title)}</option>`).join('')}</select></div>`:'';
+  const fileTile=(icon,label,id)=>`<div onclick="openLightbox(${id})" style="width:150px;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:10px;background:var(--surface);cursor:pointer;"><div style="font-size:2.4rem;">${icon}</div><div style="font-size:0.7rem;color:var(--text-soft);">${label}</div></div>`;
+  const imgs=(e.images||[]).map(im=>{
+    const m=im.mime||'';
+    let inner;
+    if(m.includes('pdf'))inner=fileTile('📄','PDF',im.id);
+    else if(m.includes('audio'))inner=fileTile('🎵','трек',im.id);
+    else inner=`<img class="entry-thumb" data-fid="${im.id}" onclick="openLightbox(${im.id})" alt="фото">`;
+    return `<div class="nd-img">${inner}<button class="nd-img-del" onclick="event.stopPropagation();removeNoteImage(${im.id})" title="убрать">✕</button></div>`;
+  }).join('');
+  const extraOpts=ND_RUBRICS.filter(k=>k!==rubric).map(k=>`<option value="${k}"${(e.extraRubrics||[]).includes(k)?' selected':''}>${R_EMOJI[k]} ${R_LABEL[k]}</option>`).join('');
+  ov.innerHTML=`<div class="nd-wrap">
+    <div class="nd-top">
+      <button class="nd-back" onclick="closeNoteDetail()">← назад</button>
+      <span class="lib-rubric ${rubric}">${R_EMOJI[rubric]||'•'} ${R_LABEL[rubric]||rubric}</span>
+      <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${e.date||''} ${e.time||''}</span>
+    </div>
+    <span class="nd-label">заголовок</span>
+    <input id="nd-title" class="nd-input nd-title-input" value="${esc(e.title||'')}">
+    <span class="nd-label">суть</span>
+    <textarea id="nd-body" class="nd-area" style="min-height:64px;">${esc(e.body||'')}</textarea>
+    <span class="nd-label">полный текст</span>
+    <textarea id="nd-text" class="nd-area" style="min-height:170px;">${esc(e.text||'')}</textarea>
+    <span class="nd-label">изображения / файлы</span>
+    <div class="nd-images">${imgs||'<span style="color:var(--text-muted);font-size:0.85rem;">нет вложений</span>'}</div>
+    <div style="margin-top:0.7rem;"><button class="btn ghost" onclick="document.getElementById('note-file-input').click()">📎 прикрепить фото / файл</button><span id="nd-upload-status" style="font-size:0.8rem;color:var(--text-muted);margin-left:0.6rem;"></span></div>
+    <div class="nd-row" style="margin-top:1.2rem;">
+      <div><span class="nd-label">рубрика</span><select id="nd-rubric" class="nd-input" onchange="renderNoteDetailSub()">${rubricSel}</select></div>
+      <div id="nd-sub-wrap">${ndSubHtml(rubric,curSub)}</div>
+    </div>
+    ${worksSel?`<div style="margin-top:0.8rem;">${worksSel}</div>`:''}
+    <span class="nd-label">теги (через запятую)</span>
+    <input id="nd-tags" class="nd-input" value="${esc((e.tags||[]).join(', '))}">
+    <span class="nd-label">ещё показывать в категориях</span>
+    <select id="nd-extra" class="nd-input" multiple size="5" style="height:auto;">${extraOpts}</select>
+    <div class="nd-actions">
+      <button class="btn" onclick="saveNoteDetail()">💾 сохранить</button>
+      <button class="btn ghost" onclick="closeNoteDetail()">отмена</button>
+      <button class="btn ghost" style="color:var(--red);border-color:rgba(248,113,113,0.3);margin-left:auto;" onclick="deleteNoteDetail()">🗑 удалить</button>
+    </div>
+  </div>`;
+  if((e.images||[]).length)queueImageLoad();
+}
+window.renderNoteDetailSub=()=>{
+  const rub=document.getElementById('nd-rubric').value;
+  document.getElementById('nd-sub-wrap').innerHTML=ndSubHtml(rub,'');
+  // показать/скрыть выбор произведения (только media)
+};
+window.saveNoteDetail=async()=>{
+  const e=(SRV_DATA.library||[]).find(x=>x.id===noteDetailId);
+  if(!e)return;
+  const rubric=document.getElementById('nd-rubric').value;
+  const patch={
+    rubric,
+    title:document.getElementById('nd-title').value.trim(),
+    body:document.getElementById('nd-body').value.trim(),
+    text:document.getElementById('nd-text').value.trim(),
+    tags:document.getElementById('nd-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    extraRubrics:[...document.getElementById('nd-extra').selectedOptions].map(o=>o.value)
+  };
+  const subVal=document.getElementById('nd-sub')?.value||'';
+  const f=SUB_FIELD[rubric]; if(f)patch[f]=subVal;
+  const workSel=document.getElementById('nd-work');
+  if(workSel)patch.workId=workSel.value?Number(workSel.value):null;
+  Object.assign(e,patch,{analyzedAt:new Date().toISOString()});
+  saveSrvData(SRV_DATA);
+  try{ await srvFetch(`/api/library/by-id/${noteDetailId}`,{method:'PUT',body:JSON.stringify(patch)}); showStatus('srv-status','✓ сохранено','ok'); }
+  catch(err){ showStatus('srv-status','ошибка: '+err.message,'err'); }
+  renderNoteDetail();
+};
+window.deleteNoteDetail=()=>{
+  const id=noteDetailId;
+  if(!confirm('Удалить заметку?'))return;
+  softDeleteLib(id);
+  closeNoteDetail();
+};
+window.removeNoteImage=async(fid)=>{
+  const e=(SRV_DATA.library||[]).find(x=>x.id===noteDetailId);
+  if(!e)return;
+  e.images=(e.images||[]).filter(im=>im.id!==fid);
+  saveSrvData(SRV_DATA);
+  try{ await srvFetch('/api/files/'+fid,{method:'DELETE'}); await srvFetch(`/api/library/by-id/${noteDetailId}`,{method:'PUT',body:JSON.stringify({images:e.images})}); }catch(err){}
+  renderNoteDetail();
+};
+document.getElementById('note-file-input').addEventListener('change',async(ev)=>{
+  const file=ev.target.files[0]; ev.target.value='';
+  if(!file||noteDetailId===null)return;
+  if(file.size>12*1024*1024){showStatus('srv-status','файл слишком большой (макс 12 МБ)','err');return;}
+  const st=document.getElementById('nd-upload-status'); if(st)st.textContent='загружаю…';
+  try{
+    const dataUrl=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(file);});
+    const r=await srvFetch('/api/files',{method:'POST',body:JSON.stringify({mime:file.type||'image/jpeg',name:file.name,data:dataUrl})});
+    const e=(SRV_DATA.library||[]).find(x=>x.id===noteDetailId);
+    if(e){e.images=e.images||[];e.images.push({id:r.id,mime:file.type||'image/jpeg'});sheetCache[r.id]=dataUrl;saveSrvData(SRV_DATA);}
+    await srvFetch(`/api/library/by-id/${noteDetailId}`,{method:'PUT',body:JSON.stringify({images:e?e.images:[]})});
+    if(st)st.textContent='';
+    renderNoteDetail();
+  }catch(err){if(st)st.textContent='ошибка: '+err.message;}
+});
 function artMusicSection(w){
   const sheets=w.sheets||[];
   const sheetsHtml=sheets.length?sheets.map(s=>{
@@ -1913,15 +2099,7 @@ async function loadSheetImages(sheets){
     }catch(e){}
   }
 }
-window.openSheet=async(id)=>{
-  let url=sheetCache[id];
-  if(!url){try{const f=await srvFetch('/api/files/'+id);url=String(f.data||'').startsWith('data:')?f.data:`data:${f.mime};base64,${f.data}`;sheetCache[id]=url;}catch(e){return;}}
-  const win=window.open();
-  if(win){
-    if(url.includes('application/pdf'))win.document.write(`<iframe src="${url}" style="border:0;width:100%;height:100vh"></iframe>`);
-    else win.document.write(`<img src="${url}" style="max-width:100%">`);
-  }
-};
+window.openSheet=(id)=>openLightbox(id); // открываем ноты в лайтбоксе (внутри приложения)
 window.delSheet=async(workId,fileId)=>{
   if(!confirm('Убрать эти ноты?'))return;
   const w=WORKS.find(x=>x.id===workId);
@@ -2251,28 +2429,8 @@ window.updateLeSubrubric = () => {
   }
 };
 
-window.openLibEdit = (id) => {
-  libEditId = id;
-  const e = (SRV_DATA.library||[]).find(x => x.id === id);
-  if (!e) return;
-  document.getElementById('le-rubric').value = e.rubric || 'thought';
-  updateLeSubrubric();
-  // Восстанавливаем подрубрику (тип/приоритет/подтип/вид искусства)
-  const subVal = e.type || e.priority || e.subtype || e.artType || '';
-  const subEl = document.getElementById('le-subrubric');
-  if (subEl && subVal) subEl.value = subVal;
-  document.getElementById('le-title').value = e.title || '';
-  document.getElementById('le-body').value = e.body || '';
-  document.getElementById('le-text').value = e.text || '';
-  document.getElementById('le-tags').value = (e.tags || []).join(', ');
-  // мультиселект «ещё в категориях» — все рубрики кроме основной
-  const extra = Array.isArray(e.extraRubrics) ? e.extraRubrics : [];
-  const exEl = document.getElementById('le-extra');
-  exEl.innerHTML = ['idea','dream','task','thought','notebook','birthday','event','shopping','media','quote']
-    .filter(k => k !== (e.rubric||'thought'))
-    .map(k => `<option value="${k}"${extra.includes(k)?' selected':''}>${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`).join('');
-  document.getElementById('modal-lib-edit').classList.add('open');
-};
+// редактирование библиотеки открывает полноэкранную заметку (с вложениями, лайтбоксом, мультичленством)
+window.openLibEdit = (id) => openNoteDetail(id);
 document.getElementById('clibedit').onclick = () => closeModal('modal-lib-edit');
 document.getElementById('modal-lib-edit').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('modal-lib-edit'); });
 document.getElementById('slibedit').onclick = async () => {

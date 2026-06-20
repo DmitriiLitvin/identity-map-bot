@@ -92,6 +92,60 @@ async function storeTelegramPhoto(photoArray) {
   } catch (e) { console.error('storeTelegramPhoto:', e.message); return null; }
 }
 
+// ── Альбомы (media group): несколько фото в одном сообщении приходят как отдельные апдейты ──
+const mediaGroups = {}; // media_group_id -> { chatId, fileIds:[], caption, timer }
+
+async function processMediaGroup(mgid) {
+  const buf = mediaGroups[mgid];
+  if (!buf) return;
+  delete mediaGroups[mgid];
+  const { chatId, fileIds, caption } = buf;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ru-RU', { day:'numeric', month:'short', year:'numeric' });
+  const timeStr = now.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+  // сохраняем все фото альбома
+  const images = [];
+  for (const fid of fileIds) {
+    try {
+      const { buffer } = await downloadFile(fid);
+      const id = Date.now() + Math.floor(Math.random() * 100000);
+      const data = 'data:image/jpeg;base64,' + buffer.toString('base64');
+      if (mongoFiles) await mongoFiles.insertOne({ _id: id, mime: 'image/jpeg', name: 'photo.jpg', data, createdAt: new Date().toISOString() });
+      images.push({ id, mime: 'image/jpeg' });
+    } catch(e) { console.error('media group photo:', e.message); }
+  }
+  if (!caption) {
+    DB.library.unshift({ id: Date.now(), date: dateStr, time: timeStr, sourceType: 'photo', rubric: 'media', artType: '', text: '', title: '📷 Фото ' + dateStr, body: '', images, analyzedAt: new Date().toISOString() });
+    save(DB);
+    await tgSend(chatId, `📷 ${images.length} фото сохранено в «Искусство» одной заметкой.`);
+    return;
+  }
+  // с подписью — анализируем, всё в ОДНУ запись
+  try {
+    const result = await analyze(caption, '');
+    const rubric = result.rubric || 'thought';
+    const items = result.items || [];
+    const dateShort = new Date().toLocaleDateString('ru-RU', { month:'short', year:'numeric' });
+    const entry = {
+      id: Date.now(), date: dateStr, time: timeStr, sourceType: 'photo', rubric, text: caption,
+      title: items[0]?.title || caption.slice(0, 60), body: items[0]?.body || '',
+      tags: [...new Set(items.flatMap(i => i.tags || []))],
+      artType: rubric === 'media' ? (result.artType || '') : undefined,
+      workTitle: rubric === 'media' ? (result.workTitle || '') : undefined,
+      images, analyzedAt: new Date().toISOString()
+    };
+    DB.library.unshift(entry);
+    items.forEach(item => DB.cards.unshift({ ...item, rubric, date: dateShort, libId: entry.id, addedAt: new Date().toISOString() }));
+    save(DB);
+    await tgSend(chatId, `${R_EMOJI[rubric]||'•'} <b>${R_LABEL[rubric]||rubric}</b> · ${images.length} фото\n<b>${entry.title}</b>\n<i>${(entry.body||'').slice(0,120)}</i>`);
+  } catch(e) {
+    console.error('media group analyze:', e);
+    DB.library.unshift({ id: Date.now(), date: dateStr, time: timeStr, sourceType: 'photo', rubric: 'media', text: caption, title: caption.slice(0, 60), images, analyzedAt: null });
+    save(DB);
+    await tgSend(chatId, `📷 ${images.length} фото сохранены, текст без анализа.`);
+  }
+}
+
 async function transcribe(buffer, filePath) {
   if (!OPENAI_API_KEY) return '[голосовое — нет OpenAI ключа]';
   const form = new FormData();
@@ -198,6 +252,18 @@ async function handle(msg) {
   const timeStr = ts.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
 
   let text = '', sourceType = 'text', context = '', photoFileId = null;
+
+  // Альбом (несколько фото одним сообщением) — копим по media_group_id и обрабатываем одной заметкой
+  if (msg.media_group_id && msg.photo) {
+    const mgid = msg.media_group_id;
+    const best = msg.photo[msg.photo.length - 1];
+    const buf = mediaGroups[mgid] || (mediaGroups[mgid] = { chatId, fileIds: [], caption: '' });
+    buf.fileIds.push(best.file_id);
+    if (msg.caption) buf.caption = msg.caption;
+    if (buf.timer) clearTimeout(buf.timer);
+    buf.timer = setTimeout(() => { processMediaGroup(mgid).catch(e => console.error('processMediaGroup:', e)); }, 1800);
+    return;
+  }
 
   if (msg.text?.startsWith('/')) {
     const cmd = msg.text.split(' ')[0];
@@ -686,9 +752,10 @@ app.put('/api/library/by-id/:id', (req, res) => {
   const id = Number(req.params.id);
   const e = DB.library.find(x => x.id === id);
   if (!e) return res.status(404).json({ error: 'not found' });
-  const { rubric, type, priority, subtype, title, body, text, tags, bucket, linkedName, workId, artType, noteKind, extraRubrics } = req.body;
+  const { rubric, type, priority, subtype, title, body, text, tags, bucket, linkedName, workId, artType, noteKind, extraRubrics, images } = req.body;
   if (rubric !== undefined) e.rubric = rubric;
   if (extraRubrics !== undefined) e.extraRubrics = Array.isArray(extraRubrics) ? extraRubrics : [];
+  if (images !== undefined) e.images = Array.isArray(images) ? images : [];
   if (type !== undefined) e.type = type;
   if (priority !== undefined) e.priority = priority;
   if (subtype !== undefined) e.subtype = subtype;
