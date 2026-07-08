@@ -357,6 +357,60 @@ select.fil:focus{border-color:var(--accent);}
 .col-move-btn{display:none;background:none;border:none;color:var(--accent2);cursor:pointer;font-size:0.68rem;font-family:'JetBrains Mono',monospace;padding:0.1rem 0.3rem;}
 .col-move-btn:hover{color:var(--accent);}
 
+/* ── ДЕНЬГИ ── */
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0.9rem;margin-top:0.6rem;}
+.fin-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;position:relative;}
+.fin-card.low{border-color:rgba(248,113,113,0.5);}
+.fin-name{font-weight:600;font-size:0.95rem;margin-bottom:0.45rem;display:flex;align-items:center;gap:0.4rem;}
+.fin-balance{font-size:1.7rem;font-weight:700;letter-spacing:-0.02em;cursor:pointer;line-height:1.1;}
+.fin-balance:hover{color:var(--accent2);}
+.fin-balance .cur{font-size:1rem;color:var(--text-soft);font-weight:500;}
+.fin-sub{font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:0.4rem;line-height:1.7;}
+.fin-runway{font-size:0.68rem;padding:0.12rem 0.5rem;border-radius:12px;display:inline-block;margin-top:0.35rem;}
+.fin-runway.ok{background:rgba(52,211,153,0.15);color:#6ee7b7;}
+.fin-runway.warn{background:rgba(251,191,36,0.15);color:#fde68a;}
+.fin-runway.bad{background:rgba(248,113,113,0.18);color:#fca5a5;}
+.fin-acts{position:absolute;top:0.6rem;right:0.6rem;display:flex;gap:0.25rem;}
+.fin-acts button{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:0.1rem 0.3rem;border-radius:4px;}
+.fin-acts button:hover{color:var(--text);background:var(--surface3);}
+.fin-rec-row{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.3rem;border-bottom:1px solid var(--border);font-size:0.87rem;}
+.fin-rec-row:last-child{border-bottom:none;}
+.fin-rec-amt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap;}
+.fin-total-card{background:linear-gradient(135deg,rgba(124,106,245,0.12),rgba(96,165,250,0.06));border:1px solid rgba(124,106,245,0.3);border-radius:12px;padding:1rem 1.3rem;margin-bottom:1.2rem;display:flex;gap:1.6rem;flex-wrap:wrap;}
+.fin-total-item .l{font-size:0.62rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);}
+.fin-total-item .v{font-size:1.25rem;font-weight:700;margin-top:0.15rem;}
+/* ── ВРЕМЯ ── */
+.time-months{display:flex;align-items:flex-end;gap:6px;height:180px;padding:0.5rem 0.2rem 0;overflow-x:auto;}
+.time-mcol{display:flex;flex-direction:column-reverse;flex:0 0 34px;cursor:pointer;border-radius:4px 4px 0 0;overflow:hidden;}
+.time-mcol:hover{outline:1px solid var(--accent);}
+.time-mlabel{font-size:0.58rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-align:center;margin-top:0.3rem;white-space:nowrap;}
+.time-seg{width:100%;}
+
+/* ── СТРОГАЯ ТЕМА (альтернатива «игрушечной»): резче углы, спокойнее цвета, моноширинные акценты ── */
+body.theme-sharp{
+  --r:4px;--r-sm:2px;
+  --bg:#0a0b0d;--bg2:#0d0e11;--bg3:#111318;
+  --surface:#121419;--surface2:#171a21;--surface3:#1d212a;
+  --border:rgba(255,255,255,0.10);--border2:rgba(255,255,255,0.18);
+  --accent:#4f7df0;--accent2:#7da2ff;--accent-glow:rgba(79,125,240,0.15);
+  --text:#e6e8ec;--text-soft:#9aa1ad;--text-muted:#5c6470;
+  --shadow:none;--shadow-card:none;
+}
+body.theme-sharp header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:1rem 2.5rem;}
+body.theme-sharp header h1{background:none;-webkit-background-clip:unset;-webkit-text-fill-color:var(--text);letter-spacing:0.02em;font-weight:600;text-transform:uppercase;font-size:1.1rem;}
+body.theme-sharp .hsub{text-transform:uppercase;letter-spacing:0.14em;font-size:0.62rem;font-family:'JetBrains Mono',monospace;}
+body.theme-sharp nav button{text-transform:uppercase;font-size:0.66rem;letter-spacing:0.09em;font-family:'JetBrains Mono',monospace;}
+body.theme-sharp .btn{border-radius:2px;box-shadow:none;}
+body.theme-sharp .btn:hover{transform:none;box-shadow:none;}
+body.theme-sharp .idea-card:hover,body.theme-sharp .rub-card:hover{transform:none;box-shadow:none;border-color:var(--accent);}
+body.theme-sharp .art-work{border-radius:4px;}
+body.theme-sharp .art-work:hover{transform:none;box-shadow:none;}
+body.theme-sharp .sec-head h2{text-transform:uppercase;font-size:1rem;letter-spacing:0.05em;}
+body.theme-sharp .chat-msg.user{background:var(--accent);box-shadow:none;border-radius:4px 4px 0 4px;}
+body.theme-sharp .chat-msg.assistant{border-radius:4px 4px 4px 0;}
+body.theme-sharp .art-pill.sel{background:var(--accent);box-shadow:none;}
+body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-text-fill-color:var(--accent2);}
+
 /* ── ИСКУССТВО ── */
 .art-subnav{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;}
 .art-pill{padding:0.4rem 0.95rem;border:1px solid var(--border2);border-radius:22px;font-size:0.82rem;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text-soft);transition:all 0.18s;white-space:nowrap;}
@@ -442,6 +496,7 @@ select.fil:focus{border-color:var(--accent);}
 /* ── МЕРОПРИЯТИЯ ── */
 .appt-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.7rem;border-left:3px solid var(--accent);}
 .appt-card.soon{border-left-color:var(--red);}
+.appt-card.past{opacity:0.6;border-left-color:var(--text-muted);}
 .appt-head{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;}
 .appt-title{font-weight:600;font-size:0.98rem;}
 .appt-when{font-size:0.74rem;color:var(--text-soft);font-family:'JetBrains Mono',monospace;}
@@ -469,6 +524,9 @@ select.fil:focus{border-color:var(--accent);}
   <button data-tab="dreams">🌙 Сны</button>
   <button data-tab="tasks">🎯 Задачи</button>
   <button data-tab="shopping">🛒 Покупки</button>
+  <button data-tab="money">💰 Деньги</button>
+  <button data-tab="work">💼 Работа</button>
+  <button data-tab="time">⏱ Время</button>
   <button data-tab="thoughts">💭 Мысли</button>
   <button data-tab="notebook">📌 Не забыть</button>
   <button data-tab="media">🎨 Искусство</button>
@@ -509,10 +567,12 @@ select.fil:focus{border-color:var(--accent);}
 
 <!-- RIVER -->
 <div class="section" id="tab-river">
-  <div class="sec-head"><h2>Река идей</h2><p>движение и связи во времени</p></div>
+  <div class="sec-head"><h2>Река</h2><p>поток всего, что ты записываешь — во времени</p></div>
   <div class="river-legend" id="river-legend"></div>
   <div class="river-wrap" id="river-wrap"><canvas id="river-canvas"></canvas><div class="river-tooltip" id="river-tooltip"></div></div>
-  <p style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);margin-top:0.65rem;">← → тащи для прокрутки · наводи на точку</p>
+  <p style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--ink-muted);margin-top:0.65rem;">ширина потока = сколько записей · клик по реке — раскрыть месяц · клик по легенде — скрыть рубрику</p>
+  <div id="river-drill"></div>
+  <div id="river-analysis"></div>
 </div>
 
 <!-- TIMELINE -->
@@ -565,6 +625,7 @@ select.fil:focus{border-color:var(--accent);}
       <option value="birthday">🎂 дни рождения</option>
       <option value="event">📅 мероприятия</option>
       <option value="shopping">🛒 покупки</option>
+      <option value="work">💼 работа</option>
       <option value="media">🎨 искусство</option>
       <option value="quote">💬 цитаты</option>
     </select>
@@ -668,6 +729,49 @@ select.fil:focus{border-color:var(--accent);}
   <div id="shop-done-section"></div>
 </div>
 
+<!-- MONEY / ДЕНЬГИ -->
+<div class="section" id="tab-money">
+  <div class="sec-head"><h2>💰 Деньги</h2><p>балансы сервисов и ежемесячные платежи</p></div>
+  <div class="toolbar">
+    <button class="btn" id="btn-add-fin-service">+ сервис</button>
+    <button class="btn sec" id="btn-add-fin-rec">+ ежемесячный платёж</button>
+    <button class="btn ghost" id="btn-sync-money">↓ обновить</button>
+  </div>
+  <div id="money-summary"></div>
+  <div class="ovrsub">балансы сервисов</div>
+  <div class="fin-grid" id="fin-services"></div>
+  <div class="ovrsub" style="margin-top:1.6rem;">каждый месяц</div>
+  <div class="tasks-columns" style="margin-top:0.6rem;">
+    <div class="tasks-col"><div class="tasks-col-head">📉 Расходы</div><div id="fin-expenses"></div></div>
+    <div class="tasks-col"><div class="tasks-col-head">📈 Доходы</div><div id="fin-incomes"></div></div>
+  </div>
+</div>
+
+<!-- TIME / ВРЕМЯ -->
+<div class="section" id="tab-time">
+  <div class="sec-head"><h2>⏱ Время</h2><p>куда уходит жизнь — по данным Clockify</p></div>
+  <div class="toolbar">
+    <select class="fil" id="time-period">
+      <option value="30">последний месяц</option>
+      <option value="90">3 месяца</option>
+      <option value="365">год</option>
+      <option value="0" selected>всё время</option>
+    </select>
+    <button class="btn ghost" id="btn-sync-time">↓ обновить</button>
+  </div>
+  <div id="time-content"><div class="empty"><p>загружаю…</p></div></div>
+</div>
+
+<!-- WORK / РАБОТА -->
+<div class="section" id="tab-work">
+  <div class="sec-head"><h2>💼 Работа</h2><p>рабочие задачи, идеи, проекты</p></div>
+  <div class="toolbar">
+    <input type="search" id="work-search" placeholder="🔍 поиск..." style="flex:1;min-width:120px;max-width:240px;padding:0.35rem 0.7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;">
+    <button class="btn ghost" id="btn-sync-work">↓ обновить</button>
+  </div>
+  <div class="rub-grid" id="work-grid"></div>
+</div>
+
 <!-- ART / ИСКУССТВО -->
 <div class="section" id="tab-media">
   <div class="sec-head"><h2>🎨 Искусство</h2><p>кино, книги, живопись</p></div>
@@ -726,6 +830,15 @@ select.fil:focus{border-color:var(--accent);}
       <button class="btn sec" id="btn-srv-push">↑ отправить на сервер</button>
     </div>
     <div class="status-msg" id="srv-status"></div>
+  </div>
+
+  <div class="srv-panel">
+    <h3>Оформление</h3>
+    <div class="toolbar" style="margin-bottom:0;">
+      <button class="btn sec" id="theme-soft-btn" onclick="setTheme('soft')">🌙 мягкая</button>
+      <button class="btn sec" id="theme-sharp-btn" onclick="setTheme('sharp')">◼ строгая</button>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">строгая — резче углы, спокойнее цвета, моноширинные акценты</p>
   </div>
 
   <div class="srv-panel">
@@ -859,6 +972,42 @@ select.fil:focus{border-color:var(--accent);}
 </div>
 </div>
 
+<!-- MODAL: Finance Service -->
+<div class="mo" id="modal-fin-service">
+<div class="md">
+  <h3 id="fs-modal-title">Сервис</h3>
+  <div class="fg"><label>название</label><input type="text" id="fs-name" placeholder="Anthropic API, Twitter bot, Render…"></div>
+  <div style="display:flex;gap:0.6rem;">
+    <div class="fg" style="flex:1.4"><label>баланс сейчас</label><input type="number" step="0.01" id="fs-balance" placeholder="42.50"></div>
+    <div class="fg" style="flex:1"><label>валюта</label><select id="fs-currency"><option>$</option><option>€</option><option>₪</option><option>₽</option></select></div>
+  </div>
+  <div style="display:flex;gap:0.6rem;">
+    <div class="fg" style="flex:1.4"><label>расход в месяц (~)</label><input type="number" step="0.01" id="fs-monthly" placeholder="100"></div>
+    <div class="fg" style="flex:1"><label>число продления</label><input type="number" min="1" max="31" id="fs-renew" placeholder="15"></div>
+  </div>
+  <div class="fg"><label>заметка</label><input type="text" id="fs-note" placeholder="платит друг / карта Тинькофф…"></div>
+  <div class="macts"><button class="btncancel" id="cfs">отмена</button><button class="btn" id="sfs">сохранить</button></div>
+</div>
+</div>
+
+<!-- MODAL: Finance Recurring -->
+<div class="mo" id="modal-fin-rec">
+<div class="md">
+  <h3 id="fr-modal-title">Ежемесячный платёж</h3>
+  <div class="fg"><label>название</label><input type="text" id="fr-title" placeholder="Аренда квартиры, Claude, интернет…"></div>
+  <div style="display:flex;gap:0.6rem;">
+    <div class="fg" style="flex:1.4"><label>сумма в месяц</label><input type="number" step="0.01" id="fr-amount" placeholder="100"></div>
+    <div class="fg" style="flex:1"><label>валюта</label><select id="fr-currency"><option>$</option><option>€</option><option>₪</option><option>₽</option></select></div>
+  </div>
+  <div style="display:flex;gap:0.6rem;">
+    <div class="fg" style="flex:1.4"><label>тип</label><select id="fr-kind"><option value="expense">📉 расход</option><option value="income">📈 доход</option></select></div>
+    <div class="fg" style="flex:1"><label>число месяца</label><input type="number" min="1" max="31" id="fr-day" placeholder="1"></div>
+  </div>
+  <div class="fg"><label>заметка</label><input type="text" id="fr-note" placeholder="сдаю квартиру / плачу за…"></div>
+  <div class="macts"><button class="btncancel" id="cfr">отмена</button><button class="btn" id="sfr">сохранить</button></div>
+</div>
+</div>
+
 <!-- MODAL: Appointment -->
 <div class="mo" id="modal-appt">
 <div class="md">
@@ -916,8 +1065,9 @@ const DEFAULT_SRV='https://identity-map-bot.onrender.com';
 
 const TYPE_META={belief:{label:'🔥 убеждение',color:'#c14b2a',bar:'#e8a080'},question:{label:'❓ открытый вопрос',color:'#3d5a7a',bar:'#80a8d0'},shifting:{label:'🔄 в движении',color:'#7a6533',bar:'#c8a840'},tension:{label:'⚡ противоречие',color:'#7a3d7a',bar:'#c080c0'},abandoned:{label:'💀 отказался',color:'#9a9390',bar:'#c0bcb8'}};
 const DOMAIN_META={love:{label:'любовь',color:'#c14b2a'},mind:{label:'мышление',color:'#3d5a7a'},society:{label:'общество',color:'#4a6741'},self:{label:'я сам',color:'#7a6533'},work:{label:'работа',color:'#7a3d7a'},other:{label:'другое',color:'#9a9390'}};
-const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'🎨',context:'🌀',notebook:'📌',birthday:'🎂',event:'📅',shopping:'🛒'};
-const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Искусство',context:'Контекст',notebook:'Не забыть',birthday:'День рождения',event:'Мероприятие',shopping:'Покупка'};
+const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'🎨',context:'🌀',notebook:'📌',birthday:'🎂',event:'📅',shopping:'🛒',work:'💼'};
+const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Искусство',context:'Контекст',notebook:'Не забыть',birthday:'День рождения',event:'Мероприятие',shopping:'Покупка',work:'Работа'};
+const R_COLOR={idea:'#f87171',thought:'#94a3b8',task:'#34d399',dream:'#60a5fa',media:'#fb923c',notebook:'#fbbf24',shopping:'#4ade80',event:'#a78bfa',quote:'#c084fc',work:'#38bdf8',birthday:'#f472b6',other:'#64748b'};
 const SRC_LABEL={text:'текст',voice:'🎙 аудио',forward:'📎 переслано',photo:'📷 фото',import:'📥 импорт'};
 
 function load(){try{return JSON.parse(localStorage.getItem(SK))||{ideas:[],events:[],beliefs:[],intro:null};}catch{return{ideas:[],events:[],beliefs:[],intro:null};}}
@@ -931,6 +1081,36 @@ const SRV_DATA_KEY='idmap_srvdata_v1';
 function loadSrvData(){try{return JSON.parse(localStorage.getItem(SRV_DATA_KEY))||{library:[],cards:[]};}catch{return{library:[],cards:[]};}}
 function saveSrvData(d){try{localStorage.setItem(SRV_DATA_KEY,JSON.stringify(d));}catch(e){console.warn('SrvData cache too large:',e);}}
 let SRV_DATA=loadSrvData();
+
+// ── СИНХРОНИЗАЦИЯ UI-СОСТОЯНИЯ С СЕРВЕРОМ ──
+// Выполненные задачи, колонки, куплено, «опубликовал», удалённые — раньше жили только в localStorage
+// и терялись при смене браузера/устройства. Теперь сервер — источник правды.
+let statePushPending=false,statePushTimer=null;
+function uiStateSnapshot(){return{doneTasks:[...doneIds],taskCols,shopDone:[...shopDone],shopCols,published:publishedMap,deleted:[...deletedLibIds]};}
+function scheduleStateSync(){statePushPending=true;clearTimeout(statePushTimer);statePushTimer=setTimeout(pushUiState,1200);}
+async function pushUiState(){
+  statePushPending=false;
+  try{await srvFetch('/api/state',{method:'POST',body:JSON.stringify(uiStateSnapshot())});}
+  catch(e){console.warn('state sync:',e.message);}
+}
+function adoptUiState(remote){
+  if(statePushPending)return; // локальные изменения ещё не отправлены — не перетираем их серверными
+  const hasRemote=remote&&((remote.doneTasks||[]).length||(remote.deleted||[]).length||(remote.shopDone||[]).length||Object.keys(remote.taskCols||{}).length||Object.keys(remote.shopCols||{}).length||Object.keys(remote.published||{}).length);
+  if(!hasRemote){
+    // на сервере пусто (первый запуск после апдейта) — заливаем локальное состояние наверх
+    const hasLocal=doneIds.size||deletedLibIds.size||shopDone.size||Object.keys(taskCols).length||Object.keys(shopCols).length||Object.keys(publishedMap).length;
+    if(hasLocal)scheduleStateSync();
+    return;
+  }
+  doneIds=new Set(remote.doneTasks||[]);taskCols=remote.taskCols||{};
+  shopDone=new Set(remote.shopDone||[]);shopCols=remote.shopCols||{};
+  publishedMap=remote.published||{};deletedLibIds=new Set(remote.deleted||[]);
+  try{
+    localStorage.setItem(DONE_KEY,JSON.stringify([...doneIds]));localStorage.setItem(COL_KEY,JSON.stringify(taskCols));
+    localStorage.setItem(SHOP_DONE_KEY,JSON.stringify([...shopDone]));localStorage.setItem(SHOP_COL_KEY,JSON.stringify(shopCols));
+    localStorage.setItem(PUBLISHED_KEY,JSON.stringify(publishedMap));localStorage.setItem(LIB_DELETED_KEY,JSON.stringify([...deletedLibIds]));
+  }catch(e){}
+}
 
 // init srv url fields
 document.getElementById('srv-url').value=SRV.url;
@@ -969,6 +1149,7 @@ async function pullFromServer(silent=false){
     data.library=merged;
     SRV_DATA=data;
     saveSrvData(SRV_DATA);
+    adoptUiState(data.uiState); // подтягиваем состояние задач/покупок/удалённых с сервера
     // merge idea-type cards into local ideas
     if(data.cards){
       const ideaCards=data.cards.filter(c=>c.rubric==='idea');
@@ -1049,6 +1230,9 @@ function renderTab(t){
   if(t==='birthdays')renderBirthdays();
   if(t==='events')renderEvents();
   if(t==='shopping')renderShopping();
+  if(t==='work')renderWork();
+  if(t==='money')renderMoney();
+  if(t==='time')renderTime();
   if(t==='feelings')setFeel('admiration');
   if(t==='media')renderMediaTab();
 }
@@ -1122,46 +1306,168 @@ window.delIdea=(i)=>{if(!confirm('Удалить?'))return;D.ideas.splice(i,1);s
 // ── RIVER ──
 function parseYear(str){if(!str)return null;const m=str.match(/(\d{4})/);if(m)return parseInt(m[1]);const mo={янв:0,фев:1,мар:2,апр:3,май:4,июн:5,июл:6,авг:7,сен:8,окт:9,ноя:10,дек:11};const lc=str.toLowerCase();for(const[k,v]of Object.entries(mo)){if(lc.includes(k)){const ym=lc.match(/\d{4}/);return ym?parseFloat(ym[0]+(v/12).toFixed(2)):null;}}return null;}
 
+// Река v2: стримграф всех записей библиотеки — ширина потока = объём записей рубрики в месяц.
+// id записи ≈ timestamp создания, это и есть ось времени.
+let riverOff=new Set();      // выключенные рубрики (клик по легенде)
+let riverState=null;         // данные последнего рендера для hover/click
+window.toggleRiverRubric=(r)=>{if(riverOff.has(r))riverOff.delete(r);else riverOff.add(r);renderRiver();};
+
+function riverEntries(){
+  const MIN=Date.UTC(2006,0,1),MAX=Date.now()+366*86400000;
+  return (SRV_DATA.library||[]).filter(e=>!deletedLibIds.has(e.id)&&typeof e.id==='number'&&e.id>MIN&&e.id<MAX);
+}
+
 function renderRiver(){
   const wrap=document.getElementById('river-wrap');
   const canvas=document.getElementById('river-canvas');
   const tooltip=document.getElementById('river-tooltip');
   const legend=document.getElementById('river-legend');
-  legend.innerHTML=Object.entries(DOMAIN_META).map(([k,m])=>`<div class="rleg"><div class="rleg-dot" style="background:${m.color}"></div><span>${m.label}</span></div>`).join('');
-  const ideas=D.ideas.filter(i=>i.date);
-  if(!ideas.length){canvas.height=60;const ctx=canvas.getContext('2d');ctx.fillStyle='#9a9390';ctx.font='13px Cormorant Garamond';ctx.fillText('нет идей с датами',20,35);return;}
-  const domains=Object.keys(DOMAIN_META);
-  const LANE=68,PT=38,PL=78,PR=38;
-  const CH=PT+domains.length*LANE+36;
-  const years=ideas.map(i=>parseYear(i.date)).filter(Boolean);
-  const minY=Math.min(...years)-0.5,maxY=Math.max(...years)+0.5;
-  const span=Math.max(maxY-minY,2);
-  const CW=Math.max(900,span*160+PL+PR);
-  wrap.style.height=CH+'px';canvas.width=CW;canvas.height=CH;canvas.style.height=CH+'px';
-  const ctx=canvas.getContext('2d');
-  function xY(y){return PL+(y-minY)/span*(CW-PL-PR);}
-  function yD(d){const i=domains.indexOf(d);return PT+(i<0?0:i)*LANE+LANE/2;}
-  ctx.fillStyle='#ede8de';ctx.fillRect(0,0,CW,CH);
-  for(let y=Math.ceil(minY);y<=Math.floor(maxY);y++){const x=xY(y);ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.strokeStyle='rgba(26,22,18,0.07)';ctx.lineWidth=1;ctx.stroke();ctx.font='10px JetBrains Mono';ctx.fillStyle='#9a9390';ctx.textAlign='center';ctx.fillText(y,x,CH-6);}
-  domains.forEach((d,i)=>{const y=PT+i*LANE+LANE/2;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(CW-PR,y);ctx.strokeStyle='rgba(26,22,18,0.09)';ctx.lineWidth=1;ctx.setLineDash([4,6]);ctx.stroke();ctx.setLineDash([]);ctx.font='10px JetBrains Mono';ctx.fillStyle='#9a9390';ctx.textAlign='right';ctx.fillText(DOMAIN_META[d].label,PL-6,y+4);});
-  const byD={};ideas.forEach(idea=>{const yr=parseYear(idea.date);if(!yr)return;if(!byD[idea.domain])byD[idea.domain]=[];byD[idea.domain].push({idea,yr});});
-  Object.entries(byD).forEach(([dom,pts])=>{if(pts.length<2)return;pts.sort((a,b)=>a.yr-b.yr);const col=DOMAIN_META[dom]?.color||'#9a9390';ctx.beginPath();pts.forEach((pt,i)=>{const x=xY(pt.yr),y=yD(dom);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.strokeStyle=col+'88';ctx.lineWidth=2;ctx.stroke();});
-  const nodes=[];
-  ideas.forEach(idea=>{const yr=parseYear(idea.date);if(!yr)return;const x=xY(yr),y=yD(idea.domain);const col=DOMAIN_META[idea.domain]?.color||'#9a9390';const r=idea.type==='abandoned'?5:7;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='#ede8de';ctx.lineWidth=2;ctx.stroke();nodes.push({x,y,r:r+4,idea,col});});
-  let isDrag=false,sx=0,sl=0;
+  const drill=document.getElementById('river-drill');
+  const entries=riverEntries();
+  if(entries.length<5){
+    legend.innerHTML='';if(drill)drill.innerHTML='';
+    wrap.style.height='80px';canvas.width=800;canvas.height=80;
+    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,800,80);
+    ctx.fillStyle='#565d7a';ctx.font='13px Inter';ctx.fillText('пока мало записей для реки — синхронизируйся с сервером',20,45);
+    renderRiverAnalysis(entries);
+    return;
+  }
+  // ── бакеты по месяцам ──
+  const first=new Date(Math.min(...entries.map(e=>e.id)));
+  const start=new Date(first.getFullYear(),first.getMonth(),1);
+  const now=new Date();
+  const buckets=[];
+  for(const c=new Date(start);c<=now;c.setMonth(c.getMonth()+1)){
+    buckets.push({y:c.getFullYear(),m:c.getMonth(),counts:{},items:{}});
+  }
+  if(buckets.length===1)buckets.push({y:now.getFullYear(),m:now.getMonth()+1,counts:{},items:{}});
+  const bIdx=d=>(d.getFullYear()-start.getFullYear())*12+(d.getMonth()-start.getMonth());
+  const volume={};
+  entries.forEach(e=>{
+    const i=bIdx(new Date(e.id));if(i<0||i>=buckets.length)return;
+    const r=R_COLOR[e.rubric]?e.rubric:'other';
+    buckets[i].counts[r]=(buckets[i].counts[r]||0)+1;
+    (buckets[i].items[r]=buckets[i].items[r]||[]).push(e);
+    volume[r]=(volume[r]||0)+1;
+  });
+  const allSeries=Object.entries(volume).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+  const series=allSeries.filter(k=>!riverOff.has(k));
+  legend.innerHTML=allSeries.map(k=>`<div class="rleg" style="cursor:pointer;${riverOff.has(k)?'opacity:0.3;':''}" onclick="toggleRiverRubric('${k}')"><div class="rleg-dot" style="background:${R_COLOR[k]||R_COLOR.other}"></div><span>${R_EMOJI[k]||'•'} ${R_LABEL[k]||k} · ${volume[k]}</span></div>`).join('');
+  // ── размеры и шкалы ──
+  const PL=24,PR=24,PT=22,PB=30,H=330;
+  const CW=Math.max(wrap.clientWidth||900,buckets.length*95+PL+PR);
+  canvas.width=CW;canvas.height=H;wrap.style.height=H+'px';canvas.style.height=H+'px';
   wrap.style.overflowX='auto';wrap.style.overflowY='hidden';
-  canvas.onmousedown=e=>{isDrag=true;sx=e.pageX-wrap.offsetLeft;sl=wrap.scrollLeft;};
-  canvas.onmouseleave=()=>isDrag=false;
-  canvas.onmouseup=()=>isDrag=false;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,CW,H);
+  const X=i=>PL+(buckets.length===1?0:i*(CW-PL-PR)/(buckets.length-1));
+  const totals=buckets.map(b=>series.reduce((s,r)=>s+(b.counts[r]||0),0));
+  const maxT=Math.max(1,...totals);
+  const scale=(H-PT-PB)/maxT*0.92;
+  const mid=PT+(H-PT-PB)/2;
+  // сетка месяцев
+  const labelStep=Math.max(1,Math.ceil(buckets.length/16));
+  buckets.forEach((b,i)=>{
+    const x=X(i);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.beginPath();ctx.moveTo(x,PT-8);ctx.lineTo(x,H-PB+6);ctx.stroke();
+    if(i%labelStep===0){ctx.fillStyle='#565d7a';ctx.font='10px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText(MONTHS_RU_SHORT[b.m]+(b.m===0||i===0?` ${b.y}`:''),x,H-10);}
+  });
+  // ── ленты (стек с «силуэтной» базой — симметрично от середины) ──
+  const bandsAt=buckets.map(()=>[]);
+  let base=buckets.map((b,i)=>mid-totals[i]*scale/2);
+  const smoothTo=(pts)=>{for(let i=1;i<pts.length;i++){const p=pts[i-1],c=pts[i];ctx.quadraticCurveTo(p.x,p.y,(p.x+c.x)/2,(p.y+c.y)/2);}ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);};
+  series.forEach(r=>{
+    const bottom=base.slice();
+    const top=buckets.map((b,i)=>bottom[i]+(b.counts[r]||0)*scale);
+    buckets.forEach((b,i)=>{if((b.counts[r]||0)>0)bandsAt[i].push({r,y0:bottom[i],y1:top[i],count:b.counts[r]});});
+    base=top;
+    const col=R_COLOR[r]||R_COLOR.other;
+    const ptsB=bottom.map((y,i)=>({x:X(i),y}));
+    const ptsT=top.map((y,i)=>({x:X(i),y})).reverse();
+    ctx.beginPath();ctx.moveTo(ptsB[0].x,ptsB[0].y);smoothTo(ptsB);smoothTo([{x:ptsT[0].x,y:ptsT[0].y},...ptsT]);ctx.closePath();
+    ctx.fillStyle=col+'a8';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=0.5;ctx.stroke();
+  });
+  riverState={buckets,bandsAt,X,PL,CW};
+  // ── hover + click ──
+  const nearest=(mx)=>{let best=0,bd=1e9;buckets.forEach((b,i)=>{const d=Math.abs(X(i)-mx);if(d<bd){bd=d;best=i;}});return best;};
   canvas.onmousemove=e=>{
-    if(!isDrag){
-      const rect=canvas.getBoundingClientRect();const mx=e.clientX-rect.left+wrap.scrollLeft;const my=e.clientY-rect.top;
-      let hit=null;for(const n of nodes){if(Math.hypot(mx-n.x,my-n.y)<n.r+3){hit=n;break;}}
-      if(hit){tooltip.style.display='block';tooltip.style.left=(hit.x-wrap.scrollLeft+10)+'px';tooltip.style.top=(hit.y-16)+'px';const tm=TYPE_META[hit.idea.type];tooltip.innerHTML=`<strong>${esc(hit.idea.name)}</strong><br><span style="opacity:0.7;font-size:0.72rem">${tm?.label||''} · ${hit.idea.date||''}</span>${hit.idea.body?`<br><span style="opacity:0.8;font-size:0.78rem">${esc(hit.idea.body.slice(0,80))}…</span>`:''}`;}
-      else tooltip.style.display='none';return;
-    }
-    e.preventDefault();wrap.scrollLeft=sl-(e.pageX-wrap.offsetLeft-sx);
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    const i=nearest(mx+wrap.scrollLeft-0);
+    const b=buckets[i];
+    const hit=bandsAt[i].find(s=>my>=s.y0&&my<=s.y1);
+    const total=totals[i];
+    if(total===0&&!hit){tooltip.style.display='none';return;}
+    tooltip.style.display='block';
+    tooltip.style.left=Math.min(X(i)-wrap.scrollLeft+12,(wrap.clientWidth||600)-240)+'px';
+    tooltip.style.top=Math.max(6,my-14)+'px';
+    const lines=Object.entries(b.counts).sort((x,y)=>y[1]-x[1]).map(([r,c])=>`<span style="${hit&&hit.r===r?'font-weight:700;':''}color:${R_COLOR[r]||'#888'}">●</span> ${R_LABEL[r]||r}: ${c}`).join('<br>');
+    tooltip.innerHTML=`<strong>${MONTHS_RU_FULL[b.m]} ${b.y}</strong> · ${total} зап.<br>${lines||'пусто'}`;
   };
+  canvas.onmouseleave=()=>{tooltip.style.display='none';};
+  canvas.onclick=e=>{
+    const rect=canvas.getBoundingClientRect();
+    const i=nearest(e.clientX-rect.left+0);
+    const my=e.clientY-rect.top;
+    const hit=bandsAt[i].find(s=>my>=s.y0&&my<=s.y1);
+    riverDrill(i,hit?.r);
+  };
+  renderRiverAnalysis(entries);
+}
+
+window.riverDrill=(i,r)=>{
+  const drill=document.getElementById('river-drill');
+  if(!riverState||!drill)return;
+  const b=riverState.buckets[i];
+  const list=(r?(b.items[r]||[]):Object.values(b.items).flat()).sort((a,c)=>c.id-a.id);
+  if(!list.length){drill.innerHTML='';return;}
+  drill.innerHTML=`<div class="art-ws-grouplabel" style="margin-top:1.1rem;">${MONTHS_RU_FULL[b.m]} ${b.y}${r?' · '+(R_LABEL[r]||r):''} · ${list.length} <span style="cursor:pointer;color:var(--accent2);margin-left:0.5rem;" onclick="document.getElementById('river-drill').innerHTML=''">✕ закрыть</span></div>
+  <div class="rub-grid">`+list.slice(0,60).map(e=>`<div class="rub-card" style="cursor:pointer;" onclick="openNoteDetail(${JSON.stringify(e.id)})">
+    <div class="rub-title">${esc((e.title||e.text||'').slice(0,70))}</div>
+    <div class="rub-meta"><span>${R_EMOJI[e.rubric]||'•'} ${R_LABEL[e.rubric]||e.rubric}</span><span style="margin-left:auto;">${e.date||''}</span></div>
+  </div>`).join('')+`</div>`;
+};
+
+// ── «Психоаналитик»: КАК ты пишешь, а не только что ──
+function renderRiverAnalysis(entries){
+  const el=document.getElementById('river-analysis');
+  if(!el)return;
+  if(!entries.length){el.innerHTML='';return;}
+  const hourOf=e=>{const m=(e.time||'').match(/^(\d{1,2}):/);if(m)return +m[1];return new Date(e.id).getHours();};
+  const seg=h=>h<5?'ночь':h<12?'утро':h<18?'день':'вечер';
+  const segCount={ночь:0,утро:0,день:0,вечер:0};
+  const segRubrics={ночь:{},утро:{},день:{},вечер:{}};
+  entries.forEach(e=>{const s=seg(hourOf(e));segCount[s]++;const r=e.rubric||'other';segRubrics[s][r]=(segRubrics[s][r]||0)+1;});
+  const total=entries.length;
+  const topOf=obj=>Object.entries(obj).sort((a,b)=>b[1]-a[1])[0];
+  // ритм: последние 8 недель
+  const WEEK=7*86400000;const nowMs=Date.now();
+  const weeks=Array.from({length:8},(_,i)=>entries.filter(e=>e.id>nowMs-(8-i)*WEEK&&e.id<=nowMs-(7-i)*WEEK).length);
+  const wMax=Math.max(1,...weeks);
+  const spark=weeks.map(c=>'▁▂▃▄▅▆▇█'[Math.min(7,Math.round(c/wMax*7))]).join('');
+  // сдвиг фокуса: последние 30 дней vs предыдущие 90
+  const recent=entries.filter(e=>e.id>nowMs-30*86400000);
+  const before=entries.filter(e=>e.id<=nowMs-30*86400000&&e.id>nowMs-120*86400000);
+  const cnt=list=>{const o={};list.forEach(e=>{o[e.rubric]=(o[e.rubric]||0)+1;});return o;};
+  const topRecent=topOf(cnt(recent)||{}),topBefore=topOf(cnt(before)||{});
+  // наблюдения
+  const obs=[];
+  const topSeg=topOf(segCount);
+  if(topSeg)obs.push(`Чаще всего ты пишешь <b>${topSeg[0]==='ночь'?'ночью':topSeg[0]==='утро'?'утром':topSeg[0]==='день'?'днём':'вечером'}</b> — ${Math.round(topSeg[1]/total*100)}% записей.`);
+  if(segCount['ночь']>0){const tn=topOf(segRubrics['ночь']);if(tn)obs.push(`Ночью (${Math.round(segCount['ночь']/total*100)}%) к тебе приходят в основном <b>${(R_LABEL[tn[0]]||tn[0]).toLowerCase()}</b>.`);}
+  if(topRecent&&topBefore&&topRecent[0]!==topBefore[0])obs.push(`Фокус сместился: раньше преобладали <b>${(R_LABEL[topBefore[0]]||topBefore[0]).toLowerCase()}</b>, за последний месяц — <b>${(R_LABEL[topRecent[0]]||topRecent[0]).toLowerCase()}</b>.`);
+  else if(topRecent)obs.push(`За последний месяц преобладают <b>${(R_LABEL[topRecent[0]]||topRecent[0]).toLowerCase()}</b> (${topRecent[1]} из ${recent.length}).`);
+  const perWeek=(recent.length/4.3).toFixed(1);
+  obs.push(`Ритм: ~<b>${perWeek}</b> записей в неделю за последний месяц. Последние 8 недель: <span style="font-family:monospace;letter-spacing:1px;">${spark}</span>`);
+  const segBar=(label,c)=>{const p=Math.round(c/total*100);return`<div class="tbrow"><span class="tblabel">${label}</span><div class="tbtrack"><div class="tbfill" style="width:${p}%;background:var(--accent2)"></div></div><span class="tbcount">${p}%</span></div>`;};
+  el.innerHTML=`<div class="srv-panel" style="margin-top:1.4rem;">
+    <h3>🧠 Как ты пишешь</h3>
+    ${obs.map(o=>`<p style="font-size:0.87rem;line-height:1.7;color:var(--text-soft);margin-bottom:0.45rem;">— ${o}</p>`).join('')}
+    <div class="ovrsub" style="margin-top:1rem;">время суток</div>
+    ${segBar('🌙 ночь (0–5)',segCount['ночь'])}${segBar('🌅 утро (5–12)',segCount['утро'])}${segBar('☀️ день (12–18)',segCount['день'])}${segBar('🌆 вечер (18–24)',segCount['вечер'])}
+  </div>`;
 }
 
 // ── TIMELINE ──
@@ -1214,7 +1520,7 @@ document.getElementById('sintro').onclick=()=>{D.intro=document.getElementById('
 // ── LIBRARY SOFT DELETE ──
 const LIB_DELETED_KEY='idmap_deleted_v1';
 function loadDeleted(){try{return new Set(JSON.parse(localStorage.getItem(LIB_DELETED_KEY))||[]);}catch{return new Set();}}
-function saveDeleted(s){localStorage.setItem(LIB_DELETED_KEY,JSON.stringify([...s]));}
+function saveDeleted(s){localStorage.setItem(LIB_DELETED_KEY,JSON.stringify([...s]));scheduleStateSync();}
 let deletedLibIds=loadDeleted();
 let showDeleted=false;
 
@@ -1270,7 +1576,7 @@ function renderLibrary(){
     if(pt)pt.textContent=`Ожидают анализа: ${pending} записей`;
   }
   if(!active.length&&!deleted.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
-  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','media','quote'];
+  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','work','media','quote'];
   const allMoveOpts='<option value="">переместить…</option>'+MOVE_RUBRICS.map(k=>{
     let opts=`<option value="${k}">${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`;
     if(SUB_OPTS[k])opts+=SUB_OPTS[k].map(([v,l])=>`<option value="${k}:${v}">&nbsp;&nbsp;└ ${l}</option>`).join('');
@@ -1399,7 +1705,7 @@ document.getElementById('lib-search').addEventListener('input',renderLibrary);
 // ── МЫСЛИ с поиском и галочкой "опубликовал" ──
 const PUBLISHED_KEY='idmap_published_v1';
 function loadPublished(){try{return JSON.parse(localStorage.getItem(PUBLISHED_KEY))||{};}catch{return{};}}
-function savePublished(p){localStorage.setItem(PUBLISHED_KEY,JSON.stringify(p));}
+function savePublished(p){localStorage.setItem(PUBLISHED_KEY,JSON.stringify(p));scheduleStateSync();}
 let publishedMap=loadPublished();
 
 window.togglePublished=(id)=>{
@@ -1417,14 +1723,14 @@ function renderThoughts(){
   if(!items.length){el.innerHTML='<div class="empty"><p>пусто</p></div>';return;}
   el.innerHTML=items.map((e,i)=>{
     const pub=publishedMap[e.id];
-    return`<div class="rub-card thought">
+    return`<div class="rub-card thought" style="cursor:pointer;" onclick="openNoteDetail(${JSON.stringify(e.id)})">
       <div class="rub-title">${esc(e.title||'')}</div>
       ${rubFullText(e,'th'+i)}
       ${rubTags(e)}
       <div class="rub-meta" style="align-items:center;">
         <span>${e.date||''} ${e.time||''}</span>
-        <button class="thought-pub-btn${pub?' published':''}" onclick="togglePublished(${JSON.stringify(e.id)})">${pub?'✓ опубликовано':'◯ опубликовал?'}</button>
-        <button onclick="softDeleteLib(${JSON.stringify(e.id)});renderThoughts();" style="margin-left:0.3rem;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+        <button class="thought-pub-btn${pub?' published':''}" onclick="event.stopPropagation();togglePublished(${JSON.stringify(e.id)})">${pub?'✓ опубликовано':'◯ опубликовал?'}</button>
+        <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(e.id)});renderThoughts();" style="margin-left:0.3rem;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -1439,17 +1745,38 @@ function renderNotebook(){
   let items=(SRV_DATA.library||[]).filter(e=>hasRubric(e,'notebook')&&!deletedLibIds.has(e.id));
   if(q)items=items.filter(e=>(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q));
   if(!items.length){el.innerHTML='<div class="empty"><p>пусто — скажи боту что запомнить</p></div>';return;}
-  el.innerHTML=items.map((e,i)=>`<div class="rub-card" style="border-top:2px solid #f59e0b;">
+  el.innerHTML=items.map((e,i)=>`<div class="rub-card" style="border-top:2px solid #f59e0b;cursor:pointer;" onclick="openNoteDetail(${JSON.stringify(e.id)})">
     <div class="rub-title">${esc(e.title||'')}</div>
     ${rubFullText(e,'nb'+i)}
     ${rubTags(e)}
     <div class="rub-meta">
       <span>${e.date||''}</span>
-      <button onclick="softDeleteLib(${JSON.stringify(e.id)});renderNotebook();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+      <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(e.id)});renderNotebook();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
     </div>
   </div>`).join('');
 }
 document.getElementById('notebook-search')?.addEventListener('input',renderNotebook);
+
+// ── РАБОТА ──
+function renderWork(){
+  const el=document.getElementById('work-grid');if(!el)return;
+  const q=(document.getElementById('work-search')?.value||'').toLowerCase();
+  let items=(SRV_DATA.library||[]).filter(e=>hasRubric(e,'work')&&!deletedLibIds.has(e.id));
+  if(q)items=items.filter(e=>(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q));
+  if(!items.length){el.innerHTML='<div class="empty"><p>пусто — скажи боту про рабочую задачу или идею</p></div>';return;}
+  el.innerHTML=items.map((e,i)=>`<div class="rub-card" style="border-top:2px solid #38bdf8;cursor:pointer;" onclick="openNoteDetail(${JSON.stringify(e.id)})">
+    <div class="rub-title">${esc(e.title||'')}</div>
+    ${rubFullText(e,'wk'+i)}
+    ${rubTags(e)}
+    <div class="rub-meta">
+      <span>${e.date||''}</span>
+      <span style="margin-left:auto;font-size:0.68rem;color:var(--accent2);">открыть →</span>
+      <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(e.id)});renderWork();" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+    </div>
+  </div>`).join('');
+}
+document.getElementById('work-search')?.addEventListener('input',renderWork);
+document.getElementById('btn-sync-work')?.addEventListener('click',()=>pullFromServer());
 
 // ── ДНИ РОЖДЕНИЯ ──
 const MONTHS_RU_FULL=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -1487,10 +1814,12 @@ const BDAY_SEED=[
 
 let BDAYS=[];
 
+const DAY_START_HOUR=5; // ночь до 5:00 — ещё прошедший день (Дмитрий «сова»), чтобы «завтра» = ближайшее утро
 function getDaysUntil(day,month){
-  const now=new Date(); const y=now.getFullYear();
+  const ref=new Date(Date.now()-DAY_START_HOUR*3600*1000); // браузер уже в Тель-Авиве, сдвигаем на ночную границу
+  const y=ref.getFullYear();
   const t=new Date(y,month-1,day);
-  const todayMid=new Date(y,now.getMonth(),now.getDate());
+  const todayMid=new Date(y,ref.getMonth(),ref.getDate());
   if(t<todayMid)t.setFullYear(y+1);
   return Math.round((t-todayMid)/(1000*60*60*24));
 }
@@ -1612,15 +1941,17 @@ function rubTags(e){
   return`<div class="ttags" style="margin-top:0.45rem;">${tags.map(t=>`<span class="ttag">${esc(t)}</span>`).join('')}</div>`;
 }
 function rubFullText(e,uid){
-  // показываем: body (резюме) + оригинал если длинный + прикреплённые фото
+  // показываем: body (резюме; если Claude его не дал — фолбэк из начала текста) + оригинал + фото
   const imgs=entryImagesHtml(e);
   const orig=e.text||'';
   const hasOrig=orig.length>0&&orig!==e.body;
   if(!hasOrig)return (e.body?`<div class="rub-body">${esc(e.body)}</div>`:'')+imgs;
   const short=orig.length<=300;
-  return`${e.body?`<div class="rub-body">${esc(e.body)}</div>`:''}
+  // раньше при пустом body у длинной записи карточка была «голой» (только кнопка) — теперь всегда есть выжимка
+  const summary=e.body||(short?'':orig.slice(0,180).trim()+'…');
+  return`${summary&&!(short&&!e.body)?`<div class="rub-body">${esc(summary)}</div>`:''}
     <div class="rub-orig" id="ro${uid}" style="margin-top:0.5rem;font-size:0.84rem;line-height:1.65;color:var(--ink-soft);white-space:pre-wrap;${short?'':'display:none'}">${esc(orig)}</div>
-    ${short?'':`<button class="lib-toggle" onclick="togRub('ro${uid}',this)">${e.sourceType==='voice'?'🎙 слушать текст':'показать оригинал'}</button>`}${imgs}`;
+    ${short?'':`<button class="lib-toggle" onclick="event.stopPropagation();togRub('ro${uid}',this)">${e.sourceType==='voice'?'🎙 слушать текст':'показать оригинал'}</button>`}${imgs}`;
 }
 window.togRub=(id,btn)=>{const el=document.getElementById(id);if(!el)return;const hidden=el.style.display==='none';el.style.display=hidden?'block':'none';btn.textContent=hidden?'свернуть':'показать оригинал';};
 
@@ -1630,7 +1961,7 @@ const ART_KINDS={
   film:[['frame','🎞 кадр'],['scene','🎬 сцена'],['concept','💡 концепт'],['acting','🎭 актёрская игра'],['quote','💬 цитата'],['note','✍ мысль']],
   book:[['quote','💬 цитата / подчёркивание'],['concept','💡 идея'],['character','👤 персонаж'],['note','✍ мысль']],
   painting:[['detail','🔍 деталь'],['concept','💡 идея'],['note','✍ мысль']],
-  music:[['lyrics','🎤 слова / текст'],['fragment','🎵 фрагмент / мотив'],['practice','🎹 разбор / практика'],['note','✍ мысль']],
+  music:[['lyrics','🎤 слова / текст'],['fragment','🎵 фрагмент / мотив'],['practice','🎹 разбор / практика'],['vibe','🎧 вайб / группа'],['note','✍ мысль']],
   other:[['note','✍ заметка'],['quote','💬 цитата']]
 };
 const MUSIC_STATUS={planning:{label:'🎯 планирую выучить',cls:'plan'},learning:{label:'🎹 учу сейчас',cls:'learning'},learned:{label:'✅ играю',cls:'learned'}};
@@ -1667,15 +1998,26 @@ function renderArtGallery(){
   document.getElementById('art-workspace').style.display='none';
   const q=(document.getElementById('art-search')?.value||'').toLowerCase().trim();
   // субнавигация
-  const subs=[['all','Всё'],['film','🎬 Кино'],['book','📚 Книги'],['music','🎵 Музыка'],['painting','🖼 Живопись'],['other','🎨 Другое']];
+  const subs=[['all','Всё'],['film','🎬 Кино'],['book','📚 Книги'],['music','🎵 Музыка'],['painting','🖼 Живопись'],['quotes','💬 Цитаты'],['other','🎨 Другое']];
   document.getElementById('art-subnav').innerHTML=subs.map(([v,l])=>`<div class="art-pill${artSub===v?' sel':''}" onclick="setArtSub('${v}')">${l}</div>`).join('');
   const grid=document.getElementById('art-grid');
-  let works=WORKS.filter(w=>artSub==='all'||w.type===artSub);
+  let works=artSub==='quotes'?[]:WORKS.filter(w=>artSub==='all'||w.type===artSub);
   if(q)works=works.filter(w=>(w.title||'').toLowerCase().includes(q)||(w.author||'').toLowerCase().includes(q));
-  // разрозненные заметки (без произведения)
-  let loose=(SRV_DATA.library||[]).filter(e=>hasRubric(e,'media')&&!e.workId&&!deletedLibIds.has(e.id));
-  if(artSub!=='all')loose=loose.filter(e=>(e.artType||'other')===artSub);
+  // разрозненные заметки (без произведения); «Цитаты» — отдельная полка для rubric=quote
+  let loose;
+  if(artSub==='quotes'){
+    loose=(SRV_DATA.library||[]).filter(e=>hasRubric(e,'quote')&&!deletedLibIds.has(e.id));
+  }else{
+    loose=(SRV_DATA.library||[]).filter(e=>hasRubric(e,'media')&&!e.workId&&!deletedLibIds.has(e.id));
+    if(artSub!=='all')loose=loose.filter(e=>(e.artType||'other')===artSub);
+  }
   if(q)loose=loose.filter(e=>(e.title||'').toLowerCase().includes(q)||(e.text||'').toLowerCase().includes(q)||(e.body||'').toLowerCase().includes(q));
+  // вайбы: группы/треки «не забыть включить» — отдельная полка внутри Музыки
+  let vibes=[];
+  if(artSub==='music'||artSub==='all'){
+    vibes=loose.filter(e=>e.noteKind==='vibe');
+    loose=loose.filter(e=>e.noteKind!=='vibe');
+  }
   let html='';
   if(works.length){
     html+=`<div class="art-grid">`+works.map(w=>{
@@ -1692,29 +2034,35 @@ function renderArtGallery(){
       </div>`;
     }).join('')+`</div>`;
   }
-  if(loose.length){
-    html+=`<div class="art-ws-grouplabel" style="margin-top:1.4rem;">разрозненные заметки</div>`;
-    const artTypeOpts=(cur)=>SUB_OPTS.media.map(([v,l])=>`<option value="${v}"${cur===v?' selected':''}>${l}</option>`).join('');
-    html+=`<div class="art-grid">`+loose.map((e,i)=>`<div class="art-note-card" onclick="openNoteDetail(${JSON.stringify(e.id)})">
-      <div class="anc-kind" style="display:flex;align-items:center;gap:0.4rem;" onclick="event.stopPropagation()">подкатегория:
+  const artTypeOpts=(cur)=>SUB_OPTS.media.map(([v,l])=>`<option value="${v}"${cur===v?' selected':''}>${l}</option>`).join('');
+  const looseCard=(e,i,showSub)=>`<div class="art-note-card" onclick="openNoteDetail(${JSON.stringify(e.id)})">
+      ${showSub?`<div class="anc-kind" style="display:flex;align-items:center;gap:0.4rem;" onclick="event.stopPropagation()">подкатегория:
         <select class="lib-rubric-sel" onclick="event.stopPropagation()" onchange="setLooseArtType(${JSON.stringify(e.id)},this.value)"><option value="">— выбрать —</option>${artTypeOpts(e.artType)}</select>
-      </div>
+      </div>`:''}
       <div class="rub-title">${esc(e.title||'')}</div>
       ${rubFullText(e,'al'+i)}
       <div class="rub-meta"><span>${e.date||''}</span>
         <span style="margin-left:auto;font-size:0.68rem;color:var(--accent2);">открыть →</span>
         <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(e.id)});renderMediaTab();" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;">🗑</button>
       </div>
-    </div>`).join('')+`</div>`;
+    </div>`;
+  if(vibes.length){
+    html+=`<div class="art-ws-grouplabel" style="margin-top:1.4rem;">🎧 вайбы — не забыть включить</div>`;
+    html+=`<div class="art-grid">`+vibes.map((e,i)=>looseCard(e,'vb'+i,false)).join('')+`</div>`;
   }
-  if(!works.length&&!loose.length){
+  if(loose.length){
+    html+=`<div class="art-ws-grouplabel" style="margin-top:1.4rem;">${artSub==='quotes'?'💬 цитаты':'разрозненные заметки'}</div>`;
+    html+=`<div class="art-grid">`+loose.map((e,i)=>looseCard(e,i,artSub!=='quotes')).join('')+`</div>`;
+  }
+  if(!works.length&&!loose.length&&!vibes.length){
     html=`<div class="empty"><p>${q?'ничего не найдено':'пока пусто — добавь произведение или скажи боту «фильм Сталкер: ...»'}</p>${q?'':'<button class="btn" onclick="openWorkModal()">+ произведение</button>'}</div>`;
   }
   grid.innerHTML=html;
 }
 window.setArtSub=(v)=>{artSub=v;renderArtGallery();};
-window.openArtWork=(id)=>{artWorkspaceId=id;renderArtWorkspace();};
-window.closeArtWork=()=>{artWorkspaceId=null;renderArtGallery();};
+window.openArtWork=(id)=>{artWorkspaceId=id;renderArtWorkspace();pushOverlay('work');};
+function _closeArtWork(){artWorkspaceId=null;if(currentTab==='media')renderArtGallery();}
+window.closeArtWork=()=>backOr('work',_closeArtWork);
 
 function renderArtWorkspace(){
   const w=WORKS.find(x=>x.id===artWorkspaceId);
@@ -1910,6 +2258,18 @@ function entryImagesHtml(e){
   }).join('')}</div>`;
 }
 
+// ── ИСТОРИЯ БРАУЗЕРА: кнопка «назад» закрывает открытый оверлей, а не всю карту ──
+let ovStack=[];
+function pushOverlay(k){ovStack.push(k);try{history.pushState({ov:k},'');}catch(e){}}
+window.addEventListener('popstate',()=>{
+  const k=ovStack.pop();
+  if(k==='lightbox')_closeLightbox();
+  else if(k==='nd')_closeNoteDetail();
+  else if(k==='work')_closeArtWork();
+});
+// закрыть через history.back(), если оверлей сверху стека (чтобы стек истории не разъезжался)
+function backOr(k,fn){if(ovStack[ovStack.length-1]===k)history.back();else fn();}
+
 // ── ЛАЙТБОКС (картинка/PDF внутри приложения, не новое окно) ──
 window.openLightbox=async(fid)=>{
   let url=sheetCache[fid];
@@ -1919,13 +2279,19 @@ window.openLightbox=async(fid)=>{
   else if(url.includes('audio'))lb.innerHTML=`<audio controls autoplay src="${url}" onclick="event.stopPropagation()" style="width:80vw;max-width:520px;"></audio>`;
   else lb.innerHTML=`<img src="${url}" onclick="event.stopPropagation()">`;
   lb.classList.add('open');
+  pushOverlay('lightbox');
 };
-window.closeLightbox=()=>{const lb=document.getElementById('image-lightbox');lb.classList.remove('open');lb.innerHTML='';};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox();}});
+function _closeLightbox(){const lb=document.getElementById('image-lightbox');lb.classList.remove('open');lb.innerHTML='';}
+window.closeLightbox=()=>backOr('lightbox',_closeLightbox);
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(document.getElementById('image-lightbox').classList.contains('open'))closeLightbox();
+  else if(document.getElementById('note-detail-overlay').classList.contains('open'))closeNoteDetail();
+});
 
 // ── ПОЛНОЭКРАННАЯ ЗАМЕТКА: просмотр + редактирование + вложения ──
 let noteDetailId=null;
-const ND_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','media','quote'];
+const ND_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','work','media','quote'];
 function ndSubHtml(rubric,current){
   if(!SUB_OPTS[rubric])return '';
   const opts=[['','—'],...SUB_OPTS[rubric]].map(([v,l])=>`<option value="${v}"${v===(current||'')?' selected':''}>${l}</option>`).join('');
@@ -1938,13 +2304,15 @@ window.openNoteDetail=(id)=>{
   renderNoteDetail();
   document.getElementById('note-detail-overlay').classList.add('open');
   document.body.style.overflow='hidden';
+  pushOverlay('nd');
 };
-window.closeNoteDetail=()=>{
+function _closeNoteDetail(){
   document.getElementById('note-detail-overlay').classList.remove('open');
   document.body.style.overflow='';
   noteDetailId=null;
   renderTab(currentTab);
-};
+}
+window.closeNoteDetail=()=>backOr('nd',_closeNoteDetail);
 function renderNoteDetail(){
   const e=(SRV_DATA.library||[]).find(x=>x.id===noteDetailId);
   const ov=document.getElementById('note-detail-overlay');
@@ -1953,6 +2321,8 @@ function renderNoteDetail(){
   const rubricSel=ND_RUBRICS.map(k=>`<option value="${k}"${k===rubric?' selected':''}>${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`).join('');
   const curSub=SUB_FIELD[rubric]?(e[SUB_FIELD[rubric]]||''):'';
   const worksSel=rubric==='media'?`<div><span class="nd-label">произведение</span><select id="nd-work" class="nd-input"><option value="">— нет —</option>${WORKS.map(w=>`<option value="${w.id}"${e.workId===w.id?' selected':''}>${ART_TYPE_META[w.type]?.emoji||'🎨'} ${esc(w.title)}</option>`).join('')}</select></div>`:'';
+  const kindsList=ART_KINDS[e.artType||'other']||ART_KINDS.other;
+  const kindSel=rubric==='media'?`<div><span class="nd-label">вид заметки</span><select id="nd-kind" class="nd-input">${[['','—'],...kindsList].map(([v,l])=>`<option value="${v}"${(e.noteKind||'')===v?' selected':''}>${l}</option>`).join('')}</select></div>`:'';
   const fileTile=(icon,label,id)=>`<div onclick="openLightbox(${id})" style="width:150px;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:10px;background:var(--surface);cursor:pointer;"><div style="font-size:2.4rem;">${icon}</div><div style="font-size:0.7rem;color:var(--text-soft);">${label}</div></div>`;
   const imgs=(e.images||[]).map(im=>{
     const m=im.mime||'';
@@ -1982,7 +2352,7 @@ function renderNoteDetail(){
       <div><span class="nd-label">рубрика</span><select id="nd-rubric" class="nd-input" onchange="renderNoteDetailSub()">${rubricSel}</select></div>
       <div id="nd-sub-wrap">${ndSubHtml(rubric,curSub)}</div>
     </div>
-    ${worksSel?`<div style="margin-top:0.8rem;">${worksSel}</div>`:''}
+    ${worksSel||kindSel?`<div class="nd-row" style="margin-top:0.8rem;">${worksSel}${kindSel}</div>`:''}
     <span class="nd-label">теги (через запятую)</span>
     <input id="nd-tags" class="nd-input" value="${esc((e.tags||[]).join(', '))}">
     <span class="nd-label">ещё показывать в категориях</span>
@@ -2016,6 +2386,8 @@ window.saveNoteDetail=async()=>{
   const f=SUB_FIELD[rubric]; if(f)patch[f]=subVal;
   const workSel=document.getElementById('nd-work');
   if(workSel)patch.workId=workSel.value?Number(workSel.value):null;
+  const kindEl=document.getElementById('nd-kind');
+  if(kindEl)patch.noteKind=kindEl.value;
   Object.assign(e,patch,{analyzedAt:new Date().toISOString()});
   saveSrvData(SRV_DATA);
   try{ await srvFetch(`/api/library/by-id/${noteDetailId}`,{method:'PUT',body:JSON.stringify(patch)}); showStatus('srv-status','✓ сохранено','ok'); }
@@ -2167,7 +2539,7 @@ function renderEvents(){
   const now=new Date();
   const todayDay=now.getDate(), todayMonth=now.getMonth()+1;
   const map={};
-  APPTS.forEach(a=>{ if(!map[a.month])map[a.month]={}; if(!map[a.month][a.day])map[a.month][a.day]=[]; map[a.month][a.day].push(a.title); });
+  APPTS.filter(a=>!a.done).forEach(a=>{ if(!map[a.month])map[a.month]={}; if(!map[a.month][a.day])map[a.month][a.day]=[]; map[a.month][a.day].push(a.title); });
   calEl.innerHTML=`<div class="bday-calendar">`+[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>{
     const dim=new Date(now.getFullYear(),m,0).getDate();
     const fw=new Date(now.getFullYear(),m-1,1).getDay()||7;
@@ -2180,22 +2552,51 @@ function renderEvents(){
     }
     return`<div class="bday-month"><div class="bday-month-name">${MONTHS_RU_FULL[m-1]}</div><div class="bday-days">${days}</div></div>`;
   }).join('')+`</div>`;
-  const sorted=[...APPTS].map(a=>({...a,days:getDaysUntil(a.day,a.month)})).sort((x,y)=>x.days-y.days);
-  listEl.innerHTML=sorted.length?sorted.map(a=>{
-    const soon=a.days<=3;
-    const when=`${a.day} ${MONTHS_RU_SHORT[a.month-1]}${a.year?' '+a.year:''}${a.time?', '+a.time:''}`;
-    const badge=a.days===0?'сегодня!':a.days===1?'завтра':`через ${a.days} дн`;
-    return`<div class="appt-card${soon?' soon':''}">
+  // одноразовые события: год фиксирован, прошедшие НЕ переносятся на следующий год
+  const withDays=[...APPTS].map(a=>({...a,days:apptDaysC(a)}));
+  const upcoming=withDays.filter(a=>!a.done&&a.days>=0).sort((x,y)=>x.days-y.days);
+  const missed=withDays.filter(a=>!a.done&&a.days<0).sort((x,y)=>y.days-x.days);
+  const doneList=withDays.filter(a=>a.done).sort((x,y)=>y.days-x.days);
+  const when=(a)=>`${a.day} ${MONTHS_RU_SHORT[a.month-1]}${a.year?' '+a.year:''}${a.time?', '+a.time:''}`;
+  const card=(a,kind)=>{
+    const soon=kind==='up'&&a.days<=3;
+    const badge=kind==='up'?(a.days===0?'сегодня!':a.days===1?'завтра':`через ${a.days} дн`)
+      :kind==='miss'?`пропущено · ${-a.days} дн назад`:'закрыто';
+    return`<div class="appt-card${soon?' soon':''}${kind!=='up'?' past':''}">
       <div class="appt-head">
         <span class="appt-title">📅 ${esc(a.title)}</span>
-        <span class="appt-when">${when}</span>
-        <span class="appt-badge${soon?' red':''}">${badge}</span>
-        <button onclick="deleteAppt(${a.id})" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+        <span class="appt-when">${when(a)}</span>
+        <span class="appt-badge${soon||kind==='miss'?' red':''}">${badge}</span>
+        <span style="margin-left:auto;display:flex;gap:0.4rem;align-items:center;">
+          ${kind!=='done'
+            ?`<button class="btn ghost" style="font-size:0.68rem;padding:0.15rem 0.55rem;" onclick="toggleApptDone(${a.id},true)">✓ закрыть</button>`
+            :`<button class="btn ghost" style="font-size:0.68rem;padding:0.15rem 0.55rem;" onclick="toggleApptDone(${a.id},false)">↩ вернуть</button>`}
+          <button onclick="deleteAppt(${a.id})" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;" title="удалить">🗑</button>
+        </span>
       </div>
       ${a.note?`<div class="appt-note">${esc(a.note)}</div>`:''}
     </div>`;
-  }).join(''):'<div class="empty"><p>мероприятий нет — добавь кнопкой или скажи боту «выставка 12 июля в 18:00»</p></div>';
+  };
+  let html='';
+  html+=upcoming.length?upcoming.map(a=>card(a,'up')).join(''):'<div class="empty" style="padding:1.2rem;"><p>ближайших мероприятий нет — добавь кнопкой или скажи боту «выставка 12 июля в 18:00»</p></div>';
+  if(missed.length)html+=`<div class="done-section-label">⚠ пропущенные (${missed.length})</div>`+missed.map(a=>card(a,'miss')).join('');
+  if(doneList.length)html+=`<div class="done-section-label">закрытые (${doneList.length})</div>`+doneList.map(a=>card(a,'done')).join('');
+  listEl.innerHTML=html;
 }
+// дни до события с учётом года (клиент): прошедшее = отрицательное число
+function apptDaysC(a){
+  const ref=new Date(Date.now()-DAY_START_HOUR*3600*1000);
+  const today=Date.UTC(ref.getFullYear(),ref.getMonth(),ref.getDate());
+  const target=Date.UTC(a.year||ref.getFullYear(),a.month-1,a.day);
+  return Math.round((target-today)/86400000);
+}
+window.toggleApptDone=async(id,done)=>{
+  const a=APPTS.find(x=>x.id===id);
+  if(a)a.done=done;
+  renderEvents();
+  try{await srvFetch(`/api/appointments/${id}`,{method:'PUT',body:JSON.stringify({done})});}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+};
 window.deleteAppt=async(id)=>{
   if(!confirm('Удалить мероприятие?'))return;
   try{await srvFetch(`/api/appointments/${id}`,{method:'DELETE'});APPTS=APPTS.filter(a=>a.id!==id);renderEvents();}
@@ -2228,9 +2629,9 @@ document.getElementById('btn-sync-events')?.addEventListener('click',()=>loadApp
 const SHOP_COL_KEY='idmap_shop_cols_v1';
 const SHOP_DONE_KEY='idmap_shop_done_v1';
 function loadShopCols(){try{return JSON.parse(localStorage.getItem(SHOP_COL_KEY))||{};}catch{return{};}}
-function saveShopCols(c){localStorage.setItem(SHOP_COL_KEY,JSON.stringify(c));}
+function saveShopCols(c){localStorage.setItem(SHOP_COL_KEY,JSON.stringify(c));scheduleStateSync();}
 function loadShopDone(){try{return new Set(JSON.parse(localStorage.getItem(SHOP_DONE_KEY))||[]);}catch{return new Set();}}
-function saveShopDone(s){localStorage.setItem(SHOP_DONE_KEY,JSON.stringify([...s]));}
+function saveShopDone(s){localStorage.setItem(SHOP_DONE_KEY,JSON.stringify([...s]));scheduleStateSync();}
 let shopCols=loadShopCols();
 let shopDone=loadShopDone();
 let dragShopId=null;
@@ -2294,11 +2695,204 @@ document.getElementById('shop-add-btn').onclick=addShoppingItem;
 document.getElementById('shop-add-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addShoppingItem();}});
 document.getElementById('btn-sync-shopping')?.addEventListener('click',()=>pullFromServer());
 
+// ── ДЕНЬГИ: балансы сервисов + ежемесячные платежи ──
+let FINANCE={services:[],recurring:[]};
+let finLoaded=false;
+async function loadFinance(){ try{FINANCE=await srvFetch('/api/finance');finLoaded=true;}catch(e){} }
+function fmtMoney(n){ return (Math.round(n*100)/100).toLocaleString('ru-RU'); }
+function renderMoney(){
+  const sEl=document.getElementById('fin-services');
+  const eEl=document.getElementById('fin-expenses');
+  const iEl=document.getElementById('fin-incomes');
+  const sumEl=document.getElementById('money-summary');
+  if(!sEl)return;
+  if(!finLoaded){finLoaded=true;loadFinance().then(()=>{if(currentTab==='money')renderMoney();});}
+  const services=FINANCE.services||[];
+  const recurring=FINANCE.recurring||[];
+  // сервисы
+  sEl.innerHTML=services.length?services.map(s=>{
+    const months=(s.balance!=null&&s.monthlyCost)?s.balance/s.monthlyCost:null;
+    const runCls=months==null?'':months<1?'bad':months<2?'warn':'ok';
+    const age=s.balanceUpdatedAt?Math.floor((Date.now()-new Date(s.balanceUpdatedAt))/86400000):null;
+    return`<div class="fin-card${months!=null&&months<1?' low':''}">
+      <div class="fin-acts">
+        <button onclick="openFinService(${s.id})" title="редактировать">✎</button>
+        <button onclick="delFinService(${s.id})" title="удалить">🗑</button>
+      </div>
+      <div class="fin-name">${esc(s.name)}</div>
+      <div class="fin-balance" onclick="quickBalance(${s.id})" title="обновить баланс">${s.balance!=null?fmtMoney(s.balance):'—'} <span class="cur">${esc(s.currency||'$')}</span></div>
+      ${months!=null?`<span class="fin-runway ${runCls}">${months<1?'⚠ меньше месяца':'≈ '+months.toFixed(1)+' мес'}</span>`:''}
+      <div class="fin-sub">
+        ${s.monthlyCost?`~${fmtMoney(s.monthlyCost)} ${esc(s.currency||'$')}/мес<br>`:''}
+        ${s.renewDay?`продление ${s.renewDay} числа<br>`:''}
+        ${age!=null?`баланс обновлён ${age===0?'сегодня':age+' дн назад'}${age>30?' ⚠':''}`:''}
+        ${s.note?`<br><i>${esc(s.note)}</i>`:''}
+      </div>
+    </div>`;
+  }).join(''):'<div class="empty" style="padding:1.2rem;"><p>добавь сервисы, за которыми следишь: Anthropic, Twitter-бот, Render…</p></div>';
+  // ежемесячные
+  const byCur=(list)=>{const o={};list.forEach(r=>{o[r.currency||'$']=(o[r.currency||'$']||0)+Number(r.amount||0);});return o;};
+  const expenses=recurring.filter(r=>r.kind!=='income');
+  const incomes=recurring.filter(r=>r.kind==='income');
+  const row=(r)=>`<div class="fin-rec-row">
+    <span>${esc(r.title)}${r.day?` <span style="color:var(--text-muted);font-size:0.7rem;">· ${r.day} числа</span>`:''}${r.note?`<br><span style="color:var(--text-muted);font-size:0.72rem;">${esc(r.note)}</span>`:''}</span>
+    <span class="fin-rec-amt" style="color:${r.kind==='income'?'#6ee7b7':'#fca5a5'}">${r.kind==='income'?'+':'−'}${fmtMoney(r.amount)} ${esc(r.currency||'$')}</span>
+    <button onclick="openFinRec(${r.id})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.72rem;">✎</button>
+    <button onclick="delFinRec(${r.id})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.72rem;">🗑</button>
+  </div>`;
+  eEl.innerHTML=expenses.length?expenses.map(row).join(''):'<div style="color:var(--text-muted);font-size:0.8rem;padding:0.5rem;">пусто</div>';
+  iEl.innerHTML=incomes.length?incomes.map(row).join(''):'<div style="color:var(--text-muted);font-size:0.8rem;padding:0.5rem;">пусто</div>';
+  // сводка по валютам
+  const exp=byCur(expenses),inc=byCur(incomes);
+  const curs=[...new Set([...Object.keys(exp),...Object.keys(inc)])];
+  sumEl.innerHTML=curs.length?`<div class="fin-total-card">${curs.map(c=>{
+    const e=exp[c]||0,i=inc[c]||0,net=i-e;
+    return`<div class="fin-total-item"><div class="l">${c} · в месяц</div><div class="v" style="color:${net>=0?'#6ee7b7':'#fca5a5'}">${net>=0?'+':''}${fmtMoney(net)} ${c}</div><div style="font-size:0.72rem;color:var(--text-soft);margin-top:0.15rem;">−${fmtMoney(e)} · +${fmtMoney(i)}</div></div>`;
+  }).join('')}</div>`:'';
+}
+// быстрый ввод баланса — тап по цифре
+window.quickBalance=async(id)=>{
+  const s=(FINANCE.services||[]).find(x=>x.id===id);if(!s)return;
+  const v=prompt(`Баланс «${s.name}» (${s.currency||'$'}):`,s.balance!=null?s.balance:'');
+  if(v===null)return;
+  const num=parseFloat(String(v).replace(',','.'));
+  if(isNaN(num)){showStatus('srv-status','это не число','err');return;}
+  s.balance=num;s.balanceUpdatedAt=new Date().toISOString();
+  renderMoney();
+  try{await srvFetch('/api/finance/service',{method:'POST',body:JSON.stringify({id,name:s.name,balance:num})});showStatus('srv-status','✓ баланс обновлён','ok');}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+};
+let finEditId=null;
+window.openFinService=(id)=>{
+  finEditId=id||null;
+  const s=id?(FINANCE.services||[]).find(x=>x.id===id):null;
+  document.getElementById('fs-modal-title').textContent=s?'Редактировать сервис':'Новый сервис';
+  document.getElementById('fs-name').value=s?.name||'';
+  document.getElementById('fs-balance').value=s?.balance??'';
+  document.getElementById('fs-currency').value=s?.currency||'$';
+  document.getElementById('fs-monthly').value=s?.monthlyCost??'';
+  document.getElementById('fs-renew').value=s?.renewDay??'';
+  document.getElementById('fs-note').value=s?.note||'';
+  document.getElementById('modal-fin-service').classList.add('open');
+};
+document.getElementById('btn-add-fin-service').onclick=()=>openFinService();
+document.getElementById('cfs').onclick=()=>closeModal('modal-fin-service');
+document.getElementById('modal-fin-service').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-fin-service');});
+document.getElementById('sfs').onclick=async()=>{
+  const name=document.getElementById('fs-name').value.trim();if(!name)return;
+  const num=(v)=>{const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:n;};
+  const body={name,balance:num(document.getElementById('fs-balance').value),currency:document.getElementById('fs-currency').value,monthlyCost:num(document.getElementById('fs-monthly').value),renewDay:num(document.getElementById('fs-renew').value),note:document.getElementById('fs-note').value.trim()};
+  if(finEditId)body.id=finEditId;
+  try{await srvFetch('/api/finance/service',{method:'POST',body:JSON.stringify(body)});await loadFinance();closeModal('modal-fin-service');renderMoney();showStatus('srv-status','✓ сохранено','ok');}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+  finEditId=null;
+};
+window.delFinService=async(id)=>{
+  if(!confirm('Удалить сервис?'))return;
+  FINANCE.services=(FINANCE.services||[]).filter(s=>s.id!==id);renderMoney();
+  try{await srvFetch('/api/finance/service/'+id,{method:'DELETE'});}catch(e){}
+};
+let finRecEditId=null;
+window.openFinRec=(id)=>{
+  finRecEditId=id||null;
+  const r=id?(FINANCE.recurring||[]).find(x=>x.id===id):null;
+  document.getElementById('fr-modal-title').textContent=r?'Редактировать платёж':'Ежемесячный платёж';
+  document.getElementById('fr-title').value=r?.title||'';
+  document.getElementById('fr-amount').value=r?.amount??'';
+  document.getElementById('fr-currency').value=r?.currency||'$';
+  document.getElementById('fr-kind').value=r?.kind||'expense';
+  document.getElementById('fr-day').value=r?.day??'';
+  document.getElementById('fr-note').value=r?.note||'';
+  document.getElementById('modal-fin-rec').classList.add('open');
+};
+document.getElementById('btn-add-fin-rec').onclick=()=>openFinRec();
+document.getElementById('cfr').onclick=()=>closeModal('modal-fin-rec');
+document.getElementById('modal-fin-rec').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-fin-rec');});
+document.getElementById('sfr').onclick=async()=>{
+  const title=document.getElementById('fr-title').value.trim();
+  const amount=parseFloat(String(document.getElementById('fr-amount').value).replace(',','.'));
+  if(!title||isNaN(amount))return;
+  const body={title,amount,currency:document.getElementById('fr-currency').value,kind:document.getElementById('fr-kind').value,day:parseInt(document.getElementById('fr-day').value)||null,note:document.getElementById('fr-note').value.trim()};
+  if(finRecEditId)body.id=finRecEditId;
+  try{await srvFetch('/api/finance/recurring',{method:'POST',body:JSON.stringify(body)});await loadFinance();closeModal('modal-fin-rec');renderMoney();showStatus('srv-status','✓ сохранено','ok');}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+  finRecEditId=null;
+};
+window.delFinRec=async(id)=>{
+  if(!confirm('Удалить платёж?'))return;
+  FINANCE.recurring=(FINANCE.recurring||[]).filter(r=>r.id!==id);renderMoney();
+  try{await srvFetch('/api/finance/recurring/'+id,{method:'DELETE'});}catch(e){}
+};
+document.getElementById('btn-sync-money')?.addEventListener('click',()=>loadFinance().then(renderMoney));
+
+// ── ВРЕМЯ: аналитика Clockify ──
+let TIMELOG=[];
+let timeLoaded=false;
+const projColor=(name)=>{let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))%360;return`hsl(${h},55%,55%)`;};
+async function loadTimelog(){
+  try{TIMELOG=await srvFetch('/api/timelog');timeLoaded=true;}
+  catch(e){TIMELOG=TIMELOG||[];}
+}
+function renderTime(){
+  const el=document.getElementById('time-content');if(!el)return;
+  if(!timeLoaded){timeLoaded=true;el.innerHTML='<div class="empty"><p>загружаю данные времени…</p></div>';loadTimelog().then(()=>{if(currentTab==='time')renderTime();});return;}
+  if(!TIMELOG.length){
+    el.innerHTML=`<div class="empty"><p>данных пока нет.<br><br>1. Возьми API-ключ в Clockify (Profile settings → API)<br>2. Запусти <code>python import_clockify.py</code> из папки проекта<br>3. Скрипт выкачает всю историю и зальёт сюда</p></div>`;
+    return;
+  }
+  const days=parseInt(document.getElementById('time-period').value)||0;
+  const since=days?Date.now()-days*86400000:0;
+  const list=TIMELOG.filter(e=>e.s>since);
+  if(!list.length){el.innerHTML='<div class="empty"><p>за этот период записей нет</p></div>';return;}
+  const totalMin=list.reduce((s,e)=>s+(e.d||0),0);
+  const hrs=(m)=>(m/60).toFixed(m/60>=100?0:1);
+  // по проектам
+  const byProj={};
+  list.forEach(e=>{const p=e.p||'без проекта';byProj[p]=(byProj[p]||0)+(e.d||0);});
+  const projects=Object.entries(byProj).sort((a,b)=>b[1]-a[1]);
+  const pMax=projects[0]?.[1]||1;
+  // по месяцам (стек топ-6 проектов)
+  const top6=projects.slice(0,6).map(([p])=>p);
+  const byMonth={};
+  list.forEach(e=>{const d=new Date(e.s);const k=d.getFullYear()+'-'+String(d.getMonth()).padStart(2,'0');
+    byMonth[k]=byMonth[k]||{y:d.getFullYear(),m:d.getMonth(),total:0,proj:{}};
+    byMonth[k].total+=e.d||0;
+    const p=top6.includes(e.p||'без проекта')?(e.p||'без проекта'):'прочее';
+    byMonth[k].proj[p]=(byMonth[k].proj[p]||0)+(e.d||0);});
+  const months=Object.keys(byMonth).sort().map(k=>byMonth[k]);
+  const mMax=Math.max(1,...months.map(m=>m.total));
+  // время суток
+  const segs={'ночь (0–5)':0,'утро (5–12)':0,'день (12–18)':0,'вечер (18–24)':0};
+  list.forEach(e=>{const h=new Date(e.s).getHours();const k=h<5?'ночь (0–5)':h<12?'утро (5–12)':h<18?'день (12–18)':'вечер (18–24)';segs[k]+=e.d||0;});
+  // последние 30 дней среднее
+  const last30=TIMELOG.filter(e=>e.s>Date.now()-30*86400000).reduce((s,e)=>s+(e.d||0),0);
+  el.innerHTML=`
+    <div class="fin-total-card">
+      <div class="fin-total-item"><div class="l">всего за период</div><div class="v">${hrs(totalMin)} ч</div></div>
+      <div class="fin-total-item"><div class="l">записей</div><div class="v">${list.length.toLocaleString('ru-RU')}</div></div>
+      <div class="fin-total-item"><div class="l">за 30 дней</div><div class="v">${hrs(last30)} ч</div></div>
+      <div class="fin-total-item"><div class="l">в день (30д)</div><div class="v">${(last30/60/30).toFixed(1)} ч</div></div>
+    </div>
+    <div class="ovrsub">по месяцам · наведи</div>
+    <div class="time-months">${months.map(m=>{
+      const h=Math.max(3,Math.round(m.total/mMax*150));
+      const segsH=Object.entries(m.proj).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<div class="time-seg" style="height:${Math.max(1,Math.round(v/m.total*h))}px;background:${p==='прочее'?'#475069':projColor(p)}"></div>`).join('');
+      return`<div style="display:flex;flex-direction:column;align-items:center;"><div class="time-mcol" style="height:${h}px;" title="${MONTHS_RU_SHORT[m.m]} ${m.y}: ${hrs(m.total)} ч — ${Object.entries(m.proj).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`${p} ${hrs(v)}ч`).join(', ')}">${segsH}</div><div class="time-mlabel">${MONTHS_RU_SHORT[m.m]}${m.m===0?' '+m.y:''}</div></div>`;
+    }).join('')}</div>
+    <div class="ovrsub" style="margin-top:1.6rem;">на что уходит · топ ${Math.min(12,projects.length)}</div>
+    ${projects.slice(0,12).map(([p,v])=>`<div class="tbrow"><span class="tblabel" style="width:160px;">${esc(p)}</span><div class="tbtrack"><div class="tbfill" style="width:${Math.round(v/pMax*100)}%;background:${projColor(p)}"></div></div><span class="tbcount" style="width:56px;">${hrs(v)}ч</span></div>`).join('')}
+    <div class="ovrsub" style="margin-top:1.6rem;">когда работаешь</div>
+    ${Object.entries(segs).map(([k,v])=>`<div class="tbrow"><span class="tblabel" style="width:160px;">${k}</span><div class="tbtrack"><div class="tbfill" style="width:${Math.round(v/Math.max(1,totalMin)*100)}%;background:var(--accent2)"></div></div><span class="tbcount" style="width:56px;">${Math.round(v/totalMin*100)}%</span></div>`).join('')}
+  `;
+}
+document.getElementById('time-period')?.addEventListener('change',renderTime);
+document.getElementById('btn-sync-time')?.addEventListener('click',()=>{timeLoaded=false;renderTime();});
+
 function renderRubricGrid(rubric,gridId){
   const el=document.getElementById(gridId);if(!el)return;
   const items=(SRV_DATA.library||[]).filter(e=>hasRubric(e,rubric)&&!deletedLibIds.has(e.id));
   if(!items.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
-  el.innerHTML=items.map((e,i)=>`<div class="rub-card ${rubric}${e.priority==='high'?' hi':''}">
+  el.innerHTML=items.map((e,i)=>`<div class="rub-card ${rubric}${e.priority==='high'?' hi':''}" style="cursor:pointer;" onclick="openNoteDetail(${JSON.stringify(e.id)})">
     ${e.priority==='high'?'<span class="priority-badge" style="margin-bottom:0.4rem;display:inline-block;">🔴 срочно</span>':''}
     <div class="rub-title">${esc(e.title||'')}</div>
     ${rubFullText(e,'rg'+gridId+i)}
@@ -2308,7 +2902,7 @@ function renderRubricGrid(rubric,gridId){
       <span>${e.date||''} ${e.time||''}</span>
       ${e.sourceType==='voice'?'<span>🎙 аудио</span>':''}
       ${e.sourceType==='forward'?'<span>📎 переслано</span>':''}
-      <button onclick="softDeleteLib(${JSON.stringify(e.id)});this.closest('.rub-card').remove();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;padding:0.1rem 0.3rem;" title="удалить">🗑</button>
+      <button onclick="event.stopPropagation();softDeleteLib(${JSON.stringify(e.id)});this.closest('.rub-card').remove();" style="margin-left:auto;background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:0.75rem;padding:0.1rem 0.3rem;" title="удалить">🗑</button>
     </div>
   </div>`).join('');
 }
@@ -2472,9 +3066,9 @@ document.getElementById('slibedit').onclick = async () => {
 const DONE_KEY='idmap_done_tasks_v1';
 const COL_KEY='idmap_task_cols_v1';
 function loadDone(){try{return new Set(JSON.parse(localStorage.getItem(DONE_KEY))||[]);}catch{return new Set();}}
-function saveDone(s){localStorage.setItem(DONE_KEY,JSON.stringify([...s]));}
+function saveDone(s){localStorage.setItem(DONE_KEY,JSON.stringify([...s]));scheduleStateSync();}
 function loadCols(){try{return JSON.parse(localStorage.getItem(COL_KEY))||{};}catch{return {};}}
-function saveCols(c){localStorage.setItem(COL_KEY,JSON.stringify(c));}
+function saveCols(c){localStorage.setItem(COL_KEY,JSON.stringify(c));scheduleStateSync();}
 let doneIds=loadDone();
 let taskCols=loadCols(); // {id: 'global'} — если нет записи, значит 'urgent'
 
@@ -2623,6 +3217,16 @@ if(!D.ideas.length){
 }
 
 renderAll();
+
+// ── Тема оформления ──
+const THEME_KEY='idmap_theme_v1';
+window.setTheme=(t)=>{
+  document.body.classList.toggle('theme-sharp',t==='sharp');
+  try{localStorage.setItem(THEME_KEY,t);}catch(e){}
+  const soft=document.getElementById('theme-soft-btn'),sharp=document.getElementById('theme-sharp-btn');
+  if(soft&&sharp){soft.className='btn'+(t==='sharp'?' sec':'');sharp.className='btn'+(t==='sharp'?'':' sec');}
+};
+setTheme(localStorage.getItem(THEME_KEY)||'soft');
 
 // Восстанавливаем последнюю открытую вкладку (раньше всегда открывались «Идеи»)
 activateTab(localStorage.getItem(ACTIVE_TAB_KEY)||'ideas');
