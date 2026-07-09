@@ -386,6 +386,29 @@ select.fil:focus{border-color:var(--accent);}
 .time-mlabel{font-size:0.58rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-align:center;margin-top:0.3rem;white-space:nowrap;}
 .time-seg{width:100%;}
 
+/* ── ДОСКА ИСТОРИИ (мои проекты) ── */
+.art-work.project{background:linear-gradient(150deg,#0f2a20 0%,#132a35 55%,#1a1f38 100%);color:#d9f5e8;}
+.art-work.project::before{content:'✍';position:absolute;left:11px;top:7px;font-size:1.3rem;opacity:0.3;}
+.board-toolbar{display:flex;gap:0.7rem;align-items:center;flex-wrap:wrap;margin-bottom:0.7rem;}
+.board-missing{display:flex;gap:0.45rem;flex-wrap:wrap;margin-bottom:0.8rem;align-items:center;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+.board-miss-chip{border:1px dashed var(--border2);border-radius:16px;padding:0.25rem 0.7rem;cursor:pointer;font-size:0.72rem;background:var(--surface);white-space:nowrap;}
+.board-miss-chip:hover{background:var(--surface3);}
+.board-wrap{border:1px solid var(--border);border-radius:12px;background:radial-gradient(circle at 12px 12px,rgba(255,255,255,0.035) 1px,transparent 1px) 0 0/24px 24px,var(--bg2);overflow:auto;height:65vh;min-height:420px;}
+.board-canvas{position:relative;}
+.board-svg{position:absolute;left:0;top:0;pointer-events:none;}
+.board-link{fill:none;stroke:rgba(167,139,250,0.55);stroke-width:2;cursor:pointer;pointer-events:stroke;}
+.board-link:hover{stroke:#f87171;stroke-width:3.5;}
+.board-node{position:absolute;width:210px;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.35);z-index:2;}
+.board-node.linking{outline:2px dashed var(--accent);outline-offset:2px;}
+.bn-head{display:flex;align-items:center;gap:0.3rem;font-size:0.64rem;font-family:'JetBrains Mono',monospace;padding:0.35rem 0.5rem;border-radius:8px 8px 0 0;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;}
+.bn-head:active{cursor:grabbing;}
+.bn-acts{margin-left:auto;display:flex;gap:0.1rem;}
+.bn-acts button{background:none;border:none;cursor:pointer;font-size:0.74rem;color:inherit;opacity:0.75;padding:0 0.2rem;}
+.bn-acts button:hover{opacity:1;}
+.bn-title{font-weight:600;font-size:0.86rem;padding:0.45rem 0.6rem 0.15rem;line-height:1.35;}
+.bn-text{font-size:0.75rem;color:var(--text-soft);padding:0 0.6rem 0.5rem;line-height:1.55;max-height:110px;overflow:auto;}
+@media(max-width:640px){.board-node{width:168px;}.board-wrap{height:58vh;}}
+
 /* ── СТРОГАЯ ТЕМА (альтернатива «игрушечной»): резче углы, спокойнее цвета, моноширинные акценты ── */
 body.theme-sharp{
   --r:4px;--r-sm:2px;
@@ -626,6 +649,7 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
       <option value="event">📅 мероприятия</option>
       <option value="shopping">🛒 покупки</option>
       <option value="work">💼 работа</option>
+      <option value="money">💰 деньги</option>
       <option value="media">🎨 искусство</option>
       <option value="quote">💬 цитаты</option>
     </select>
@@ -735,11 +759,14 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
   <div class="toolbar">
     <button class="btn" id="btn-add-fin-service">+ сервис</button>
     <button class="btn sec" id="btn-add-fin-rec">+ ежемесячный платёж</button>
+    <button class="btn sec" id="btn-add-fin-debt">+ долг</button>
     <button class="btn ghost" id="btn-sync-money">↓ обновить</button>
   </div>
   <div id="money-summary"></div>
   <div class="ovrsub">балансы сервисов</div>
   <div class="fin-grid" id="fin-services"></div>
+  <div class="ovrsub" style="margin-top:1.6rem;">🤝 долги и обязательства</div>
+  <div id="fin-debts"></div>
   <div class="ovrsub" style="margin-top:1.6rem;">каждый месяц</div>
   <div class="tasks-columns" style="margin-top:0.6rem;">
     <div class="tasks-col"><div class="tasks-col-head">📉 Расходы</div><div id="fin-expenses"></div></div>
@@ -990,6 +1017,38 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
 </div>
 </div>
 
+<!-- MODAL: Board Node (блок доски истории) -->
+<div class="mo" id="modal-board-node">
+<div class="md">
+  <h3 id="bn-modal-title">Новый блок</h3>
+  <div class="fg"><label>тип блока</label><select id="bn-kind"></select></div>
+  <div class="fg"><label>название</label><input type="text" id="bn-title" placeholder="Главный герой / Поворот в середине / Мир после…"></div>
+  <div class="fg"><label>описание</label><textarea id="bn-text" style="min-height:110px;" placeholder="мотивы, детали, черты, как связано с остальным…"></textarea></div>
+  <div class="macts"><button class="btncancel" id="cbn">отмена</button><button class="btn" id="sbn">сохранить</button></div>
+</div>
+</div>
+
+<!-- MODAL: Finance Debt -->
+<div class="mo" id="modal-fin-debt">
+<div class="md">
+  <h3 id="fd-modal-title">Долг / обязательство</h3>
+  <div class="fg"><label>тип</label>
+    <select id="fd-direction">
+      <option value="debt_i_owe">🔴 я должен</option>
+      <option value="debt_owed_to_me">🟢 мне должны</option>
+      <option value="payment_due">📌 оплатить (счёт, налог…)</option>
+    </select>
+  </div>
+  <div class="fg"><label>кто / кому</label><input type="text" id="fd-who" placeholder="Клава, Битуах Леуми…"></div>
+  <div style="display:flex;gap:0.6rem;">
+    <div class="fg" style="flex:1.4"><label>сумма</label><input type="number" step="0.01" id="fd-amount" placeholder="2000"></div>
+    <div class="fg" style="flex:1"><label>валюта</label><select id="fd-currency"><option>₪</option><option>$</option><option>€</option><option>₽</option></select></div>
+  </div>
+  <div class="fg"><label>заметка</label><input type="text" id="fd-note" placeholder="за что, когда вернуть…"></div>
+  <div class="macts"><button class="btncancel" id="cfd">отмена</button><button class="btn" id="sfd">сохранить</button></div>
+</div>
+</div>
+
 <!-- MODAL: Finance Recurring -->
 <div class="mo" id="modal-fin-rec">
 <div class="md">
@@ -1033,6 +1092,7 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
       <option value="film">🎬 Фильм / кино</option>
       <option value="book">📚 Книга / литература</option>
       <option value="painting">🖼 Картина / живопись</option>
+      <option value="project">✍ Мой проект (история / сценарий)</option>
       <option value="other">🎨 Другое</option>
     </select>
   </div>
@@ -1065,9 +1125,9 @@ const DEFAULT_SRV='https://identity-map-bot.onrender.com';
 
 const TYPE_META={belief:{label:'🔥 убеждение',color:'#c14b2a',bar:'#e8a080'},question:{label:'❓ открытый вопрос',color:'#3d5a7a',bar:'#80a8d0'},shifting:{label:'🔄 в движении',color:'#7a6533',bar:'#c8a840'},tension:{label:'⚡ противоречие',color:'#7a3d7a',bar:'#c080c0'},abandoned:{label:'💀 отказался',color:'#9a9390',bar:'#c0bcb8'}};
 const DOMAIN_META={love:{label:'любовь',color:'#c14b2a'},mind:{label:'мышление',color:'#3d5a7a'},society:{label:'общество',color:'#4a6741'},self:{label:'я сам',color:'#7a6533'},work:{label:'работа',color:'#7a3d7a'},other:{label:'другое',color:'#9a9390'}};
-const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'🎨',context:'🌀',notebook:'📌',birthday:'🎂',event:'📅',shopping:'🛒',work:'💼'};
-const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Искусство',context:'Контекст',notebook:'Не забыть',birthday:'День рождения',event:'Мероприятие',shopping:'Покупка',work:'Работа'};
-const R_COLOR={idea:'#f87171',thought:'#94a3b8',task:'#34d399',dream:'#60a5fa',media:'#fb923c',notebook:'#fbbf24',shopping:'#4ade80',event:'#a78bfa',quote:'#c084fc',work:'#38bdf8',birthday:'#f472b6',other:'#64748b'};
+const R_EMOJI={idea:'🔥',dream:'🌙',task:'🎯',thought:'💭',resentment:'😤',admiration:'✨',quote:'💬',media:'🎨',context:'🌀',notebook:'📌',birthday:'🎂',event:'📅',shopping:'🛒',work:'💼',money:'💰'};
+const R_LABEL={idea:'Идея',dream:'Сон',task:'Задача',thought:'Мысль',resentment:'Обида',admiration:'Восхищение',quote:'Цитата',media:'Искусство',context:'Контекст',notebook:'Не забыть',birthday:'День рождения',event:'Мероприятие',shopping:'Покупка',work:'Работа',money:'Деньги'};
+const R_COLOR={idea:'#f87171',thought:'#94a3b8',task:'#34d399',dream:'#60a5fa',media:'#fb923c',notebook:'#fbbf24',shopping:'#4ade80',event:'#a78bfa',quote:'#c084fc',work:'#38bdf8',birthday:'#f472b6',money:'#eab308',other:'#64748b'};
 const SRC_LABEL={text:'текст',voice:'🎙 аудио',forward:'📎 переслано',photo:'📷 фото',import:'📥 импорт'};
 
 function load(){try{return JSON.parse(localStorage.getItem(SK))||{ideas:[],events:[],beliefs:[],intro:null};}catch{return{ideas:[],events:[],beliefs:[],intro:null};}}
@@ -1576,18 +1636,21 @@ function renderLibrary(){
     if(pt)pt.textContent=`Ожидают анализа: ${pending} записей`;
   }
   if(!active.length&&!deleted.length){el.innerHTML='<div class="empty"><p>пусто — синхронизируй с сервером</p></div>';return;}
-  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','work','media','quote'];
+  const MOVE_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','work','money','media','quote'];
   const allMoveOpts='<option value="">переместить…</option>'+MOVE_RUBRICS.map(k=>{
     let opts=`<option value="${k}">${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`;
     if(SUB_OPTS[k])opts+=SUB_OPTS[k].map(([v,l])=>`<option value="${k}:${v}">&nbsp;&nbsp;└ ${l}</option>`).join('');
     return opts;
-  }).join('');
+  }).join('')
+  // одна карточка может жить в нескольких категориях — «также в…» добавляет, не перемещая
+  +'<optgroup label="＋ также показывать в…">'+MOVE_RUBRICS.map(k=>`<option value="add:${k}">＋ ${R_EMOJI[k]||'•'} ${R_LABEL[k]||k}</option>`).join('')+'</optgroup>';
   const renderEntry=(e,i,isDeleted)=>{
     const long=(e.text||'').length>200;
     return`<div class="lib-entry${isDeleted?' soft-deleted':''}" data-src="${e.sourceType||'text'}">
       <div class="lib-head">
         <span class="lib-rubric ${e.rubric||'thought'}">${R_EMOJI[e.rubric]||'•'} ${R_LABEL[e.rubric]||e.rubric}</span>
-        ${!isDeleted?`<select class="lib-rubric-sel" title="Сменить рубрику" onchange="changeRubric(${JSON.stringify(e.id)},this.value)">${allMoveOpts}</select>`:''}
+        ${(e.extraRubrics||[]).map(r=>`<span class="ttag" title="также в: ${R_LABEL[r]||r}">+${R_EMOJI[r]||'•'} <span style="cursor:pointer;opacity:0.7;" onclick="removeExtraRubric(${JSON.stringify(e.id)},'${r}')">✕</span></span>`).join('')}
+        ${!isDeleted?`<select class="lib-rubric-sel" title="Сменить рубрику или добавить категорию" onchange="changeRubric(${JSON.stringify(e.id)},this.value)">${allMoveOpts}</select>`:''}
         <span class="lib-src">${SRC_LABEL[e.sourceType]||e.sourceType||''}</span>
         <span class="lib-date">${e.date||''} ${e.time||''}</span>
       </div>
@@ -1618,9 +1681,34 @@ function renderLibrary(){
 }
 window.toggleShowDeleted=()=>{showDeleted=!showDeleted;renderLibrary();};
 
+// Убрать доп-категорию с карточки
+window.removeExtraRubric=async(id,r)=>{
+  const e=(SRV_DATA.library||[]).find(x=>x.id===id);
+  if(!e)return;
+  e.extraRubrics=(e.extraRubrics||[]).filter(x=>x!==r);
+  saveSrvData(SRV_DATA);
+  renderLibrary();
+  try{await srvFetch(`/api/library/by-id/${id}`,{method:'PUT',body:JSON.stringify({extraRubrics:e.extraRubrics})});}
+  catch(err){showStatus('srv-status','ошибка: '+err.message,'err');}
+};
+
 // Смена рубрики вручную — по id (надёжно, индекс клиента ≠ серверного)
 window.changeRubric=async(id,val)=>{
   if(!val||id==null)return;
+  // "add:task" — ДОБАВИТЬ категорию (мультичленство), не перемещая
+  if(val.startsWith('add:')){
+    const r=val.slice(4);
+    const e=(SRV_DATA.library||[]).find(x=>x.id===id);
+    if(!e)return;
+    if(e.rubric===r||(e.extraRubrics||[]).includes(r)){renderLibrary();return;}
+    e.extraRubrics=[...(e.extraRubrics||[]),r];
+    saveSrvData(SRV_DATA);
+    renderLibrary();
+    try{await srvFetch(`/api/library/by-id/${id}`,{method:'PUT',body:JSON.stringify({extraRubrics:e.extraRubrics})});
+      showStatus('srv-status',`✓ также в «${R_LABEL[r]||r}»`,'ok');}
+    catch(err){showStatus('srv-status','ошибка: '+err.message,'err');}
+    return;
+  }
   // val может быть "idea:belief" — рубрика:подтип
   const [rubric,subtype]=val.includes(':')?val.split(':'):[val,null];
   try{
@@ -1956,7 +2044,7 @@ function rubFullText(e,uid){
 window.togRub=(id,btn)=>{const el=document.getElementById(id);if(!el)return;const hidden=el.style.display==='none';el.style.display=hidden?'block':'none';btn.textContent=hidden?'свернуть':'показать оригинал';};
 
 // ── ИСКУССТВО (кино / книги / живопись) ──
-const ART_TYPE_META={film:{emoji:'🎬',label:'Кино'},book:{emoji:'📚',label:'Книга'},painting:{emoji:'🖼',label:'Живопись'},music:{emoji:'🎵',label:'Музыка'},other:{emoji:'🎨',label:'Другое'}};
+const ART_TYPE_META={film:{emoji:'🎬',label:'Кино'},book:{emoji:'📚',label:'Книга'},painting:{emoji:'🖼',label:'Живопись'},music:{emoji:'🎵',label:'Музыка'},project:{emoji:'✍',label:'Мой проект'},other:{emoji:'🎨',label:'Другое'}};
 const ART_KINDS={
   film:[['frame','🎞 кадр'],['scene','🎬 сцена'],['concept','💡 концепт'],['acting','🎭 актёрская игра'],['quote','💬 цитата'],['note','✍ мысль']],
   book:[['quote','💬 цитата / подчёркивание'],['concept','💡 идея'],['character','👤 персонаж'],['note','✍ мысль']],
@@ -1998,7 +2086,7 @@ function renderArtGallery(){
   document.getElementById('art-workspace').style.display='none';
   const q=(document.getElementById('art-search')?.value||'').toLowerCase().trim();
   // субнавигация
-  const subs=[['all','Всё'],['film','🎬 Кино'],['book','📚 Книги'],['music','🎵 Музыка'],['painting','🖼 Живопись'],['quotes','💬 Цитаты'],['other','🎨 Другое']];
+  const subs=[['all','Всё'],['project','✍ Мои проекты'],['film','🎬 Кино'],['book','📚 Книги'],['music','🎵 Музыка'],['painting','🖼 Живопись'],['quotes','💬 Цитаты'],['other','🎨 Другое']];
   document.getElementById('art-subnav').innerHTML=subs.map(([v,l])=>`<div class="art-pill${artSub===v?' sel':''}" onclick="setArtSub('${v}')">${l}</div>`).join('');
   const grid=document.getElementById('art-grid');
   let works=artSub==='quotes'?[]:WORKS.filter(w=>artSub==='all'||w.type===artSub);
@@ -2025,8 +2113,9 @@ function renderArtGallery(){
       const cnt=artNotesFor(w.id).length;
       const meta=[w.author,w.year].filter(Boolean).join(' · ');
       const sheetCnt=(w.sheets||[]).length;
+      const blockCnt=(w.board?.nodes||[]).length;
       return`<div class="art-work ${type}" onclick="openArtWork(${w.id})">
-        <span class="aw-count">${cnt} ${cnt===1?'заметка':cnt>=2&&cnt<=4?'заметки':'заметок'}${sheetCnt?` · 🎼${sheetCnt}`:''}</span>
+        <span class="aw-count">${type==='project'?`${blockCnt} блок${blockCnt===1?'':blockCnt>=2&&blockCnt<=4?'а':'ов'}`:`${cnt} ${cnt===1?'заметка':cnt>=2&&cnt<=4?'заметки':'заметок'}${sheetCnt?` · 🎼${sheetCnt}`:''}`}</span>
         <div class="aw-type">${tm.emoji} ${tm.label}</div>
         <div class="aw-title">${esc(w.title)}</div>
         ${meta?`<div class="aw-meta">${esc(meta)}</div>`:''}
@@ -2070,6 +2159,7 @@ function renderArtWorkspace(){
   document.getElementById('art-main').style.display='none';
   const ws=document.getElementById('art-workspace');
   ws.style.display='';
+  if(w.type==='project'){renderStoryBoard(w);return;} // мой проект → доска истории
   const type=w.type||'other';const tm=ART_TYPE_META[type]||ART_TYPE_META.other;
   const meta=[w.author,w.year].filter(Boolean).join(' · ');
   const notes=artNotesFor(w.id);
@@ -2123,9 +2213,187 @@ function renderArtWorkspace(){
   if(type==='music')loadSheetImages(w.sheets||[]);
 }
 function artHeadStyle(type){
-  const m={film:'linear-gradient(150deg,#1c1230,#241a3d 60%,#10243a)',book:'linear-gradient(150deg,#3a2a18,#2c2113 55%,#1f1a10)',painting:'linear-gradient(150deg,#3a1530,#2a1840 55%,#15203a)',other:'linear-gradient(150deg,#22263a,#1c2030)'};
+  const m={film:'linear-gradient(150deg,#1c1230,#241a3d 60%,#10243a)',book:'linear-gradient(150deg,#3a2a18,#2c2113 55%,#1f1a10)',painting:'linear-gradient(150deg,#3a1530,#2a1840 55%,#15203a)',project:'linear-gradient(150deg,#0f2a20,#132a35 55%,#1a1f38)',other:'linear-gradient(150deg,#22263a,#1c2030)'};
   return `background:${m[type]||m.other};color:#fff;`;
 }
+
+// ── ДОСКА ИСТОРИИ (мои проекты): блоки сюжета + связи между ними ──
+const BOARD_KINDS={
+  arc:['🧵','основная ветка','#f472b6'],
+  goal:['🎯','цель истории','#34d399'],
+  suspense:['⚡','саспенс','#fbbf24'],
+  moral:['⚖️','мораль','#fca5a5'],
+  setting:['🌍','сеттинг / мир','#38bdf8'],
+  character:['👤','персонаж','#60a5fa'],
+  plot:['🌀','сюжетный поворот','#a78bfa'],
+  image:['🎨','образ','#fb923c'],
+  note:['✍','заметка','#94a3b8']
+};
+const BOARD_CORE=['arc','goal','suspense','moral','setting','character']; // без них история «дырявая»
+let boardWork=null,boardLinkFrom=null,boardSaveTimer=null,boardNodeEditId=null;
+
+function boardOf(w){
+  if(!w.board||!Array.isArray(w.board.nodes))w.board={nodes:[],links:[]};
+  w.board.links=w.board.links||[];
+  return w.board;
+}
+function saveBoardSoon(){
+  clearTimeout(boardSaveTimer);
+  boardSaveTimer=setTimeout(async()=>{
+    if(!boardWork)return;
+    try{await srvFetch('/api/works',{method:'POST',body:JSON.stringify({id:boardWork.id,board:boardOf(boardWork)})});}
+    catch(e){showStatus('srv-status','доска не сохранилась: '+e.message,'err');}
+  },800);
+}
+
+function renderStoryBoard(w){
+  boardWork=w;boardLinkFrom=null;
+  const b=boardOf(w);
+  const ws=document.getElementById('art-workspace');
+  const missing=BOARD_CORE.filter(k=>!b.nodes.some(n=>n.kind===k));
+  ws.innerHTML=`
+    <div class="art-ws-head project" style="${artHeadStyle('project')}">
+      <button class="awh-back" onclick="closeArtWork()">← все произведения</button>
+      <div style="flex:1;">
+        <div class="aw-type">✍ Мой проект</div>
+        <div class="awh-title">${esc(w.title)}</div>
+        <div class="awh-meta">${b.nodes.length} блоков · ${b.links.length} связей</div>
+      </div>
+      <div style="display:flex;gap:0.4rem;align-self:flex-start;margin-top:1.6rem;">
+        <button onclick="openWorkModal(${w.id})" title="редактировать" style="background:rgba(0,0,0,0.3);color:#fff;border:none;border-radius:20px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.72rem;">✎</button>
+        <button onclick="deleteWork(${w.id})" title="удалить проект" style="background:rgba(0,0,0,0.3);color:#fff;border:none;border-radius:20px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.72rem;">🗑</button>
+      </div>
+    </div>
+    <div class="board-toolbar">
+      <button class="btn" onclick="openBoardNode()">+ блок</button>
+      <span id="board-link-hint" style="font-size:0.74rem;color:var(--text-muted);">перетаскивай за цветную шапку · связь: ⚭ на одном блоке, потом клик по другому</span>
+    </div>
+    ${missing.length?`<div class="board-missing">не хватает: ${missing.map(k=>`<span class="board-miss-chip" onclick="openBoardNode(null,'${k}')" style="border-color:${BOARD_KINDS[k][2]}66;color:${BOARD_KINDS[k][2]}">${BOARD_KINDS[k][0]} ${BOARD_KINDS[k][1]} +</span>`).join('')}</div>`:''}
+    <div class="board-wrap" id="board-wrap">
+      <div class="board-canvas" id="board-canvas"><svg class="board-svg" id="board-svg"></svg></div>
+    </div>
+    ${(()=>{const pn=artNotesFor(w.id);return pn.length?`<div class="art-ws-grouplabel" style="margin-top:1.2rem;">📝 заметки к проекту · ${pn.length} <span style="font-weight:400;text-transform:none;letter-spacing:0;">(из телеграма через /cat → «Мой проект»)</span></div><div class="rub-grid">`+pn.map((n,i)=>`<div class="art-note-card" onclick="openNoteDetail(${JSON.stringify(n.id)})">${n.title?`<div class="rub-title">${esc(n.title)}</div>`:''}<div class="rub-body" style="white-space:pre-wrap;">${esc((n.body||n.text||'').slice(0,220))}</div><div class="rub-meta"><span>${n.date||''}</span><span style="margin-left:auto;font-size:0.68rem;color:var(--accent2);">открыть →</span></div></div>`).join('')+`</div>`:'';})()}`;
+  drawBoard();
+}
+
+function drawBoard(){
+  if(!boardWork)return;
+  const b=boardOf(boardWork);
+  const canvas=document.getElementById('board-canvas');
+  if(!canvas)return;
+  const maxX=Math.max(1400,...b.nodes.map(n=>(n.x||0)+280)),maxY=Math.max(650,...b.nodes.map(n=>(n.y||0)+200));
+  canvas.style.width=maxX+'px';canvas.style.height=maxY+'px';
+  const svg=document.getElementById('board-svg');
+  svg.setAttribute('width',maxX);svg.setAttribute('height',maxY);
+  canvas.querySelectorAll('.board-node').forEach(n=>n.remove());
+  b.nodes.forEach(n=>{
+    const k=BOARD_KINDS[n.kind]||BOARD_KINDS.note;
+    const div=document.createElement('div');
+    div.className='board-node'+(boardLinkFrom===n.id?' linking':'');
+    div.dataset.id=n.id;
+    div.style.left=(n.x||0)+'px';div.style.top=(n.y||0)+'px';
+    div.style.borderColor=k[2];
+    div.innerHTML=`<div class="bn-head" style="background:${k[2]}26;color:${k[2]}">${k[0]} ${k[1]}
+        <span class="bn-acts">
+          <button title="связать с другим блоком" onclick="event.stopPropagation();boardLink(${n.id})">⚭</button>
+          <button title="редактировать" onclick="event.stopPropagation();openBoardNode(${n.id})">✎</button>
+          <button title="удалить" onclick="event.stopPropagation();delBoardNode(${n.id})">✕</button>
+        </span></div>
+      <div class="bn-title">${esc(n.title||'')}</div>
+      ${n.text?`<div class="bn-text">${esc(n.text)}</div>`:''}`;
+    const head=div.querySelector('.bn-head');
+    head.addEventListener('pointerdown',ev=>{
+      if(ev.target.closest('button'))return;
+      ev.preventDefault();
+      head.setPointerCapture(ev.pointerId);
+      const sx=ev.clientX,sy=ev.clientY,ox=n.x||0,oy=n.y||0;
+      const move=e2=>{n.x=Math.max(0,ox+e2.clientX-sx);n.y=Math.max(0,oy+e2.clientY-sy);div.style.left=n.x+'px';div.style.top=n.y+'px';drawBoardLinks();};
+      const up=()=>{head.removeEventListener('pointermove',move);head.removeEventListener('pointerup',up);saveBoardSoon();};
+      head.addEventListener('pointermove',move);
+      head.addEventListener('pointerup',up);
+    });
+    div.addEventListener('click',()=>{if(boardLinkFrom!=null&&boardLinkFrom!==n.id)boardLinkTo(n.id);});
+    canvas.appendChild(div);
+  });
+  drawBoardLinks();
+}
+function nodeCenter(n){
+  const el=document.querySelector(`.board-node[data-id="${n.id}"]`);
+  return {x:(n.x||0)+(el?el.offsetWidth:210)/2,y:(n.y||0)+(el?el.offsetHeight:80)/2};
+}
+function drawBoardLinks(){
+  if(!boardWork)return;
+  const b=boardOf(boardWork);
+  const svg=document.getElementById('board-svg');
+  if(!svg)return;
+  svg.innerHTML=b.links.map((l,i)=>{
+    const a=b.nodes.find(n=>n.id===l.a),c=b.nodes.find(n=>n.id===l.b);
+    if(!a||!c)return'';
+    const p1=nodeCenter(a),p2=nodeCenter(c);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2-28;
+    return`<path d="M${p1.x},${p1.y} Q${mx},${my} ${p2.x},${p2.y}" class="board-link" onclick="delBoardLink(${i})"><title>клик — убрать связь</title></path>`;
+  }).join('');
+}
+window.boardLink=(id)=>{
+  boardLinkFrom=(boardLinkFrom===id)?null:(boardLinkFrom==null?id:boardLinkFrom);
+  if(boardLinkFrom!==id&&boardLinkFrom!=null&&boardLinkFrom!==id)return boardLinkTo(id);
+  const hint=document.getElementById('board-link-hint');
+  if(hint)hint.textContent=boardLinkFrom!=null?'теперь кликни по второму блоку (Esc — отмена)':'перетаскивай за цветную шапку · связь: ⚭ на одном блоке, потом клик по другому';
+  drawBoard();
+};
+function boardLinkTo(id){
+  const b=boardOf(boardWork);
+  if(boardLinkFrom==null||boardLinkFrom===id)return;
+  const dup=b.links.some(l=>(l.a===boardLinkFrom&&l.b===id)||(l.a===id&&l.b===boardLinkFrom));
+  if(!dup)b.links.push({a:boardLinkFrom,b:id});
+  boardLinkFrom=null;
+  renderStoryBoard(boardWork);
+  saveBoardSoon();
+}
+window.delBoardLink=(i)=>{
+  const b=boardOf(boardWork);
+  b.links.splice(i,1);
+  drawBoardLinks();
+  renderStoryBoard(boardWork);
+  saveBoardSoon();
+};
+window.delBoardNode=(id)=>{
+  if(!confirm('Удалить блок?'))return;
+  const b=boardOf(boardWork);
+  b.nodes=b.nodes.filter(n=>n.id!==id);
+  b.links=b.links.filter(l=>l.a!==id&&l.b!==id);
+  renderStoryBoard(boardWork);
+  saveBoardSoon();
+};
+window.openBoardNode=(id,presetKind)=>{
+  boardNodeEditId=id||null;
+  const n=id?boardOf(boardWork).nodes.find(x=>x.id===id):null;
+  document.getElementById('bn-modal-title').textContent=n?'Редактировать блок':'Новый блок';
+  document.getElementById('bn-kind').innerHTML=Object.entries(BOARD_KINDS).map(([v,[em,l]])=>`<option value="${v}"${(n?.kind||presetKind||'note')===v?' selected':''}>${em} ${l}</option>`).join('');
+  document.getElementById('bn-title').value=n?.title||'';
+  document.getElementById('bn-text').value=n?.text||'';
+  document.getElementById('modal-board-node').classList.add('open');
+};
+document.getElementById('cbn').onclick=()=>closeModal('modal-board-node');
+document.getElementById('modal-board-node').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-board-node');});
+document.getElementById('sbn').onclick=()=>{
+  const title=document.getElementById('bn-title').value.trim();
+  if(!title||!boardWork)return;
+  const b=boardOf(boardWork);
+  const kind=document.getElementById('bn-kind').value;
+  const text=document.getElementById('bn-text').value.trim();
+  if(boardNodeEditId){
+    const n=b.nodes.find(x=>x.id===boardNodeEditId);
+    if(n){n.kind=kind;n.title=title;n.text=text;}
+  }else{
+    const i=b.nodes.length;
+    b.nodes.push({id:Date.now(),kind,title,text,x:36+(i%5)*240,y:36+Math.floor(i/5)*170});
+  }
+  boardNodeEditId=null;
+  closeModal('modal-board-node');
+  renderStoryBoard(boardWork);
+  saveBoardSoon();
+};
 
 // ── установить подкатегорию (вид искусства) разрозненной заметке ──
 window.setLooseArtType=async(id,val)=>{
@@ -2287,11 +2555,12 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   if(document.getElementById('image-lightbox').classList.contains('open'))closeLightbox();
   else if(document.getElementById('note-detail-overlay').classList.contains('open'))closeNoteDetail();
+  else if(typeof boardLinkFrom!=='undefined'&&boardLinkFrom!=null){boardLinkFrom=null;drawBoard();const h=document.getElementById('board-link-hint');if(h)h.textContent='перетаскивай за цветную шапку · связь: ⚭ на одном блоке, потом клик по другому';}
 });
 
 // ── ПОЛНОЭКРАННАЯ ЗАМЕТКА: просмотр + редактирование + вложения ──
 let noteDetailId=null;
-const ND_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','work','media','quote'];
+const ND_RUBRICS=['idea','dream','task','thought','notebook','birthday','event','shopping','work','money','media','quote'];
 function ndSubHtml(rubric,current){
   if(!SUB_OPTS[rubric])return '';
   const opts=[['','—'],...SUB_OPTS[rubric]].map(([v,l])=>`<option value="${v}"${v===(current||'')?' selected':''}>${l}</option>`).join('');
@@ -2730,6 +2999,35 @@ function renderMoney(){
       </div>
     </div>`;
   }).join(''):'<div class="empty" style="padding:1.2rem;"><p>добавь сервисы, за которыми следишь: Anthropic, Twitter-бот, Render…</p></div>';
+  // долги и обязательства
+  const dEl=document.getElementById('fin-debts');
+  if(dEl){
+    const debts=FINANCE.debts||[];
+    const open=debts.filter(d=>!d.closed);
+    const closed=debts.filter(d=>d.closed);
+    const groups=[
+      ['debt_owed_to_me','🟢 мне должны','#6ee7b7'],
+      ['debt_i_owe','🔴 я должен','#fca5a5'],
+      ['payment_due','📌 оплатить','#fde68a']
+    ];
+    const sumByCur=(list)=>{const o={};list.forEach(d=>{if(d.amount!=null)o[d.currency||'₪']=(o[d.currency||'₪']||0)+Number(d.amount);});return Object.entries(o).map(([c,v])=>`${fmtMoney(v)} ${c}`).join(' · ');};
+    const debtRow=(d)=>`<div class="fin-rec-row">
+      <span>${esc(d.who)}${d.date?` <span style="color:var(--text-muted);font-size:0.7rem;">· ${esc(d.date)}</span>`:''}${d.note?`<br><span style="color:var(--text-muted);font-size:0.72rem;">${esc(d.note)}</span>`:''}</span>
+      <span class="fin-rec-amt">${d.amount!=null?fmtMoney(d.amount)+' '+esc(d.currency||'₪'):'—'}</span>
+      ${!d.closed?`<button class="btn ghost" style="font-size:0.66rem;padding:0.12rem 0.5rem;" onclick="closeDebt(${d.id},true)">✓ закрыто</button>`:`<button class="btn ghost" style="font-size:0.66rem;padding:0.12rem 0.5rem;" onclick="closeDebt(${d.id},false)">↩</button>`}
+      <button onclick="openFinDebt(${d.id})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.72rem;">✎</button>
+      <button onclick="delFinDebt(${d.id})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.72rem;">🗑</button>
+    </div>`;
+    let dHtml='';
+    groups.forEach(([dir,label,color])=>{
+      const list=open.filter(d=>d.direction===dir);
+      if(!list.length)return;
+      const tot=sumByCur(list);
+      dHtml+=`<div class="tasks-col" style="margin-bottom:0.8rem;min-height:auto;"><div class="tasks-col-head" style="color:${color}">${label}${tot?` · ${tot}`:''}</div>${list.map(debtRow).join('')}</div>`;
+    });
+    if(closed.length)dHtml+=`<div class="done-section-label">закрытые (${closed.length})</div><div class="tasks-col" style="min-height:auto;opacity:0.6;">${closed.map(debtRow).join('')}</div>`;
+    dEl.innerHTML=dHtml||'<div style="color:var(--text-muted);font-size:0.8rem;padding:0.5rem;">пусто — скажи боту «занял у Клавы 2000 рублей» или добавь кнопкой</div>';
+  }
   // ежемесячные
   const byCur=(list)=>{const o={};list.forEach(r=>{o[r.currency||'$']=(o[r.currency||'$']||0)+Number(r.amount||0);});return o;};
   const expenses=recurring.filter(r=>r.kind!=='income');
@@ -2822,6 +3120,43 @@ window.delFinRec=async(id)=>{
   if(!confirm('Удалить платёж?'))return;
   FINANCE.recurring=(FINANCE.recurring||[]).filter(r=>r.id!==id);renderMoney();
   try{await srvFetch('/api/finance/recurring/'+id,{method:'DELETE'});}catch(e){}
+};
+// ── долги ──
+let finDebtEditId=null;
+window.openFinDebt=(id)=>{
+  finDebtEditId=id||null;
+  const d=id?(FINANCE.debts||[]).find(x=>x.id===id):null;
+  document.getElementById('fd-modal-title').textContent=d?'Редактировать долг':'Долг / обязательство';
+  document.getElementById('fd-direction').value=d?.direction||'debt_i_owe';
+  document.getElementById('fd-who').value=d?.who||'';
+  document.getElementById('fd-amount').value=d?.amount??'';
+  document.getElementById('fd-currency').value=d?.currency||'₪';
+  document.getElementById('fd-note').value=d?.note||'';
+  document.getElementById('modal-fin-debt').classList.add('open');
+};
+document.getElementById('btn-add-fin-debt').onclick=()=>openFinDebt();
+document.getElementById('cfd').onclick=()=>closeModal('modal-fin-debt');
+document.getElementById('modal-fin-debt').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-fin-debt');});
+document.getElementById('sfd').onclick=async()=>{
+  const who=document.getElementById('fd-who').value.trim();if(!who)return;
+  const amt=parseFloat(String(document.getElementById('fd-amount').value).replace(',','.'));
+  const body={who,amount:isNaN(amt)?null:amt,currency:document.getElementById('fd-currency').value,direction:document.getElementById('fd-direction').value,note:document.getElementById('fd-note').value.trim()};
+  if(finDebtEditId)body.id=finDebtEditId;
+  try{await srvFetch('/api/finance/debt',{method:'POST',body:JSON.stringify(body)});await loadFinance();closeModal('modal-fin-debt');renderMoney();showStatus('srv-status','✓ сохранено','ok');}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+  finDebtEditId=null;
+};
+window.closeDebt=async(id,closed)=>{
+  const d=(FINANCE.debts||[]).find(x=>x.id===id);
+  if(d)d.closed=closed;
+  renderMoney();
+  try{await srvFetch('/api/finance/debt',{method:'POST',body:JSON.stringify({id,closed})});}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+};
+window.delFinDebt=async(id)=>{
+  if(!confirm('Удалить запись о долге?'))return;
+  FINANCE.debts=(FINANCE.debts||[]).filter(d=>d.id!==id);renderMoney();
+  try{await srvFetch('/api/finance/debt/'+id,{method:'DELETE'});}catch(e){}
 };
 document.getElementById('btn-sync-money')?.addEventListener('click',()=>loadFinance().then(renderMoney));
 
