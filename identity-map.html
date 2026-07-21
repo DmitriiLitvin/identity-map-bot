@@ -352,6 +352,21 @@ select.fil:focus{border-color:var(--accent);}
   .btn{padding:0.4rem 0.7rem;font-size:0.74rem;}
   /* убираем hover-трансформы (на тач не нужно) */
   .idea-card:hover,.rub-card:hover,.art-work:hover{transform:none;}
+  /* iOS: поля ввода ≥16px — иначе браузер сам зумит страницу при фокусе */
+  input,select,textarea{font-size:16px!important;}
+  /* тач-таргеты: кнопкам и пилюлям комфортный размер под палец */
+  .btn{min-height:38px;}
+  nav button{min-height:44px;}
+  .art-pill{padding:0.5rem 1rem;}
+  .lib-rubric-sel{min-height:32px;}
+  .topt{padding:0.4rem 0.85rem;}
+  /* финансы и состояния на мобильном */
+  .fin-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+  .fin-balance{font-size:1.4rem;}
+  .fin-total-card{gap:0.9rem;padding:0.8rem 1rem;}
+  .time-months{height:140px;}
+  .stm-hm{grid-template-rows:repeat(7,9px);}
+  .stm-hm div{width:9px;height:9px;}
 }
 /* кнопка переноса между колонками — на десктопе скрыта (там drag), на мобильном показывается */
 .col-move-btn{display:none;background:none;border:none;color:var(--accent2);cursor:pointer;font-size:0.68rem;font-family:'JetBrains Mono',monospace;padding:0.1rem 0.3rem;}
@@ -385,6 +400,10 @@ select.fil:focus{border-color:var(--accent);}
 .time-mcol:hover{outline:1px solid var(--accent);}
 .time-mlabel{font-size:0.58rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-align:center;margin-top:0.3rem;white-space:nowrap;}
 .time-seg{width:100%;}
+
+/* ── СОСТОЯНИЯ ── */
+.stm-hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);gap:3px;overflow-x:auto;padding-bottom:4px;}
+.stm-hm div{width:11px;height:11px;border-radius:3px;background:var(--surface3);}
 
 /* ── ДОСКА ИСТОРИИ (мои проекты) ── */
 .art-work.project{background:linear-gradient(150deg,#0f2a20 0%,#132a35 55%,#1a1f38 100%);color:#d9f5e8;}
@@ -550,6 +569,7 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
   <button data-tab="money">💰 Деньги</button>
   <button data-tab="work">💼 Работа</button>
   <button data-tab="time">⏱ Время</button>
+  <button data-tab="states">🌗 Состояния</button>
   <button data-tab="thoughts">💭 Мысли</button>
   <button data-tab="notebook">📌 Не забыть</button>
   <button data-tab="media">🎨 Искусство</button>
@@ -787,6 +807,24 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
     <button class="btn ghost" id="btn-sync-time">↓ обновить</button>
   </div>
   <div id="time-content"><div class="empty"><p>загружаю…</p></div></div>
+</div>
+
+<!-- STATES / СОСТОЯНИЯ -->
+<div class="section" id="tab-states">
+  <div class="sec-head"><h2>🌗 Состояния</h2><p>отметки из бота (/st) · интенсивность и динамика</p></div>
+  <div class="toolbar">
+    <button class="btn ghost" id="btn-sync-states">↓ обновить</button>
+    <button class="btn sec" id="btn-states-share">🔗 ссылка для психоаналитика</button>
+  </div>
+  <div id="states-share-box" style="display:none;margin-bottom:1rem;padding:0.7rem 0.9rem;background:var(--surface);border:1px solid var(--border2);border-radius:10px;font-size:0.8rem;">
+    <div style="color:var(--text-muted);font-size:0.7rem;margin-bottom:0.3rem;">Открытая ссылка — только три трека, без какого-либо упоминания карты. Можно смело отправлять:</div>
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+      <code id="states-share-url" style="word-break:break-all;color:var(--accent2);"></code>
+      <button class="btn ghost" style="font-size:0.7rem;padding:0.2rem 0.6rem;" onclick="copyStatesShare()">📋 копировать</button>
+    </div>
+  </div>
+  <div id="states-quick"></div>
+  <div id="states-content"><div class="empty"><p>загружаю…</p></div></div>
 </div>
 
 <!-- WORK / РАБОТА -->
@@ -1293,6 +1331,7 @@ function renderTab(t){
   if(t==='work')renderWork();
   if(t==='money')renderMoney();
   if(t==='time')renderTime();
+  if(t==='states')renderStates();
   if(t==='feelings')setFeel('admiration');
   if(t==='media')renderMediaTab();
 }
@@ -3222,6 +3261,84 @@ function renderTime(){
 }
 document.getElementById('time-period')?.addEventListener('change',renderTime);
 document.getElementById('btn-sync-time')?.addEventListener('click',()=>{timeLoaded=false;renderTime();});
+
+// ── СОСТОЯНИЯ: трекер 🌿 ✋ 💧 (отметки из бота /st + быстрые отметки тут) ──
+const ST_META={weed:['🌿','марихуана','#4ade80'],fap:['✋','мастурбация','#a78bfa'],cry:['💧','слёзы','#60a5fa']};
+const ST_BARS=['▁','▂','▄','▆','█'];
+let STEVENTS=[],stLoaded=false;
+const DAY_MS=86400000;
+async function loadStates(){ try{STEVENTS=await srvFetch('/api/state-events');stLoaded=true;}catch(e){} }
+function stDayKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function renderStates(){
+  const q=document.getElementById('states-quick'),c=document.getElementById('states-content');
+  if(!q||!c)return;
+  if(!stLoaded){stLoaded=true;loadStates().then(()=>{if(currentTab==='states')renderStates();});return;}
+  // быстрые отметки: состояние + уровень одним кликом
+  q.innerHTML=`<div class="ovrsub">быстрая отметка</div>`+Object.entries(ST_META).map(([k,[em,label]])=>
+    `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem;flex-wrap:wrap;">
+      <span style="width:150px;font-size:0.85rem;">${em} ${label}</span>
+      ${[1,2,3,4,5].map(l=>`<button class="btn ghost" style="font-family:monospace;padding:0.3rem 0.6rem;" onclick="quickState('${k}',${l})">${ST_BARS[l-1]} ${l}</button>`).join('')}
+    </div>`).join('');
+  // карточки статистики по каждому состоянию
+  if(!STEVENTS.length){c.innerHTML='<div class="empty" style="margin-top:1rem;"><p>отметок пока нет — жми кнопки выше или /st в боте</p></div>';return;}
+  const now=Date.now();
+  c.innerHTML=Object.entries(ST_META).map(([k,[em,label,color]])=>{
+    const ev=STEVENTS.filter(e=>e.kind===k);
+    const last30=ev.filter(e=>e.ts>now-30*DAY_MS),prev30=ev.filter(e=>e.ts<=now-30*DAY_MS&&e.ts>now-60*DAY_MS);
+    const avg=last30.length?(last30.reduce((s,e)=>s+e.level,0)/last30.length).toFixed(1):'—';
+    const trend=last30.length-prev30.length;
+    const lastEv=ev[ev.length-1];
+    const daysSince=lastEv?Math.floor((now-lastEv.ts)/DAY_MS):null;
+    // хитмэп 16 недель
+    const byDay={};ev.forEach(e=>{const kk=stDayKey(e.ts);byDay[kk]=Math.max(byDay[kk]||0,e.level);});
+    const start=new Date();start.setDate(start.getDate()-start.getDay()-15*7);
+    let cells='';
+    for(let w=0;w<16;w++)for(let d=0;d<7;d++){
+      const dt=new Date(start.getTime()+(w*7+d)*DAY_MS);
+      const lv=byDay[stDayKey(dt.getTime())]||0;
+      cells+=`<div style="${lv?`background:${color};opacity:${0.25+lv*0.15};`:''}" title="${dt.toLocaleDateString('ru-RU')}${lv?' · '+lv+'/5':''}"></div>`;
+    }
+    // последние события
+    const recent=[...ev].reverse().slice(0,8).map(e=>
+      `<span class="ttag" style="display:inline-flex;gap:0.3rem;align-items:center;">${new Date(e.ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} ${ST_BARS[e.level-1]}${e.level}
+       <span style="cursor:pointer;opacity:0.6;" onclick="delStateEvent(${e._id})">✕</span></span>`).join(' ');
+    return`<div class="fin-card" style="margin-bottom:1rem;">
+      <div class="fin-name">${em} ${label}
+        <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${lastEv?(daysSince===0?'сегодня':daysSince+' дн назад'):'нет записей'}</span>
+      </div>
+      <div class="stats-row" style="grid-template-columns:repeat(4,minmax(70px,1fr));margin-bottom:0.8rem;">
+        <div class="stat-card" style="padding:0.5rem;"><div class="statn" style="font-size:1.3rem;">${last30.length}</div><div class="statl">за 30 дн</div></div>
+        <div class="stat-card" style="padding:0.5rem;"><div class="statn" style="font-size:1.3rem;">${avg}</div><div class="statl">ср. интенс.</div></div>
+        <div class="stat-card" style="padding:0.5rem;"><div class="statn" style="font-size:1.3rem;color:${trend>0?'#fca5a5':trend<0?'#6ee7b7':'var(--text-muted)'};-webkit-text-fill-color:${trend>0?'#fca5a5':trend<0?'#6ee7b7':'var(--text-muted)'};">${trend>0?'+':''}${trend}</div><div class="statl">vs пред. 30</div></div>
+        <div class="stat-card" style="padding:0.5rem;"><div class="statn" style="font-size:1.3rem;">${daysSince??'—'}</div><div class="statl">дней без</div></div>
+      </div>
+      <div class="stm-hm">${cells}</div>
+      <div style="font-size:0.65rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:0.3rem;">последние 16 недель · насыщенность = интенсивность</div>
+      ${recent?`<div style="margin-top:0.6rem;display:flex;gap:0.3rem;flex-wrap:wrap;">${recent}</div>`:''}
+    </div>`;
+  }).join('');
+}
+window.quickState=async(kind,level)=>{
+  const doc={_id:Date.now(),ts:Date.now(),kind,level};
+  STEVENTS.push(doc);renderStates();
+  try{await srvFetch('/api/state-event',{method:'POST',body:JSON.stringify({kind,level})});showStatus('srv-status','✓ отмечено','ok');}
+  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+};
+window.delStateEvent=async(id)=>{
+  STEVENTS=STEVENTS.filter(e=>e._id!==id);renderStates();
+  try{await srvFetch('/api/state-event/'+id,{method:'DELETE'});}catch(e){}
+};
+let statesShareUrl='';
+document.getElementById('btn-states-share')?.addEventListener('click',async()=>{
+  try{
+    const r=await srvFetch('/api/states-share');
+    statesShareUrl=r.url;
+    document.getElementById('states-share-url').textContent=r.url;
+    document.getElementById('states-share-box').style.display='';
+  }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+});
+window.copyStatesShare=()=>{ if(statesShareUrl)navigator.clipboard?.writeText(statesShareUrl).then(()=>showStatus('srv-status','✓ скопировано','ok')); };
+document.getElementById('btn-sync-states')?.addEventListener('click',()=>{stLoaded=false;renderStates();});
 
 function renderRubricGrid(rubric,gridId){
   const el=document.getElementById(gridId);if(!el)return;

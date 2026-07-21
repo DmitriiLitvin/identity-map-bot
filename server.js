@@ -1,6 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import crypto from 'crypto';
 import { MongoClient } from 'mongodb';
 
 const app = express();
@@ -21,6 +22,7 @@ const TG = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 // Поэтому в 3:00 «завтра» = ближайшее утро, а не следующая календарная дата. Меняй DAY_START_HOUR при желании.
 const USER_TZ = 'Asia/Jerusalem';
 const DAY_START_HOUR = 5;
+const MAP_URL = process.env.MAP_URL || 'https://dmitriilitvin.github.io/identity-map-bot/identity-map.html';
 function userTodayParts() {
   const shifted = new Date(Date.now() - DAY_START_HOUR * 3600 * 1000);
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: USER_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(shifted);
@@ -37,6 +39,7 @@ function userTodayLine() {
 let mongoCol = null;
 let mongoFiles = null; // отдельная коллекция для нот/файлов (чтобы не раздувать основной документ)
 let timelogCol = null; // отдельная коллекция для тайм-трекинга (Clockify)
+let statesCol = null;  // трекер состояний (🌿 ✋ 💧) — ежедневные отметки интенсивности
 
 async function connectMongo() {
   if (!MONGODB_URI) { console.warn('⚠️  MONGODB_URI не задан — данные не сохранятся'); return; }
@@ -47,6 +50,7 @@ async function connectMongo() {
     mongoCol = db.collection('data');
     mongoFiles = db.collection('files');
     timelogCol = db.collection('timelog'); // записи Clockify — отдельно, их десятки тысяч
+    statesCol = db.collection('states');   // отметки состояний
     console.log('✓ MongoDB подключён');
   } catch(e) {
     console.error('MongoDB ошибка подключения:', e.message);
@@ -288,6 +292,17 @@ async function analyze(text, context = '') {
 const R_EMOJI = { idea:'🔥', dream:'🌙', task:'🎯', thought:'💭', notebook:'📌', birthday:'🎂', event:'📅', shopping:'🛒', work:'💼', money:'💰', resentment:'😤', admiration:'✨', quote:'💬', media:'🎨', context:'🌀' };
 const R_LABEL = { idea:'Идея', dream:'Сон', task:'Задача', thought:'Мысль', notebook:'Не забыть', birthday:'День рождения', event:'Мероприятие', shopping:'Покупка', work:'Работа', money:'Деньги', resentment:'Обида', admiration:'Восхищение', quote:'Цитата', media:'Искусство', context:'Контекст' };
 
+// ── Трекер состояний: /st → кнопка состояния → шкала интенсивности 1–5 ──
+const STATE_META = { weed: ['🌿','марихуана'], fap: ['✋','мастурбация'], cry: ['💧','слёзы'] };
+const LEVEL_BARS = ['▁','▂','▄','▆','█'];
+const levelBar = (l) => '█'.repeat(l) + '▁'.repeat(5 - l);
+
+async function addStateEvent(kind, level, ts) {
+  if (!statesCol) return null;
+  const doc = { _id: Date.now() + Math.floor(Math.random() * 1000), ts: ts || Date.now(), kind, level };
+  try { await statesCol.insertOne(doc); return doc; } catch(e) { console.error('state insert:', e.message); return null; }
+}
+
 // ── /cat: явный выбор категорий кнопками для СЛЕДУЮЩЕГО сообщения ──
 const CAT_LIST = [
   ['idea','🔥 Идея'],['thought','💭 Мысль'],['task','🎯 Задача'],
@@ -309,6 +324,40 @@ async function handleCallback(cb) {
   const chatId = cb.message?.chat?.id, mid = cb.message?.message_id, data = cb.data || '';
   const ack = (t) => tgApi('answerCallbackQuery', { callback_query_id: cb.id, text: t || '' });
   if (!chatId) return ack();
+  // ── трекер состояний: выбор состояния → шкала интенсивности ──
+  if (data.startsWith('st:')) {
+    const kind = data.slice(3);
+    const m = STATE_META[kind];
+    if (!m) return ack();
+    await tgApi('editMessageText', { chat_id: chatId, message_id: mid, parse_mode: 'HTML',
+      text: `${m[0]} <b>${m[1]}</b> — интенсивность?`,
+      reply_markup: { inline_keyboard: [
+        [1,2,3,4,5].map(l => ({ text: `${LEVEL_BARS[l-1]} ${l}`, callback_data: `stl:${kind}:${l}` })),
+        [{ text: '← назад', callback_data: 'st_back' }]
+      ] } });
+    return ack();
+  }
+  if (data === 'st_back') {
+    await tgApi('editMessageText', { chat_id: chatId, message_id: mid, parse_mode: 'HTML',
+      text: '🌗 <b>Что отметить?</b>',
+      reply_markup: { inline_keyboard: [[
+        { text: '🌿 марихуана', callback_data: 'st:weed' },
+        { text: '✋ мастурбация', callback_data: 'st:fap' },
+        { text: '💧 слёзы', callback_data: 'st:cry' }
+      ]] } });
+    return ack();
+  }
+  if (data.startsWith('stl:')) {
+    const [, kind, lvl] = data.split(':');
+    const m = STATE_META[kind]; const level = Math.min(5, Math.max(1, Number(lvl) || 3));
+    if (!m) return ack();
+    const doc = await addStateEvent(kind, level);
+    const now = new Date();
+    const t = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: USER_TZ });
+    await tgApi('editMessageText', { chat_id: chatId, message_id: mid, parse_mode: 'HTML',
+      text: doc ? `✓ ${m[0]} <b>${m[1]}</b> · ${levelBar(level)} ${level}/5 · ${t}` : '⚠️ Не сохранилось (нет базы)' });
+    return ack(doc ? 'записано' : 'ошибка');
+  }
   DB.pendingCat = DB.pendingCat || {};
   const st = DB.pendingCat[chatId];
   // выбор конкретного проекта
@@ -413,6 +462,18 @@ async function handle(msg) {
       if (!dreams.length) { await tgSend(chatId, 'Снов пока нет.'); return; }
       const lines = dreams.map(e => `🌙 <b>${e.title||'Сон'}</b>\n${e.date}\n<i>${e.body?.slice(0,100)||''}...</i>`).join('\n\n');
       await tgSend(chatId, lines);
+      return;
+    }
+    if (cmd === '/st') {
+      await tgSend(chatId, '🌗 <b>Что отметить?</b>', { reply_markup: { inline_keyboard: [[
+        { text: '🌿 марихуана', callback_data: 'st:weed' },
+        { text: '✋ мастурбация', callback_data: 'st:fap' },
+        { text: '💧 слёзы', callback_data: 'st:cry' }
+      ]] } });
+      return;
+    }
+    if (cmd === '/map') {
+      await tgSend(chatId, `🗺 <b>Карта личности:</b>\n${MAP_URL}\n\n<i>Закрепи это сообщение — будет быстрый доступ с телефона.</i>`);
       return;
     }
     if (cmd === '/cat') {
@@ -1157,6 +1218,123 @@ app.get('/api/timelog', async (req,res)=>{
   }catch(e){ res.status(500).json({error:e.message}); }
 });
 
+// ── СОСТОЯНИЯ: API для вкладки карты ──
+app.post('/api/state-event', async (req,res)=>{
+  if(!auth(req,res))return;
+  const { kind, level, ts } = req.body;
+  if(!STATE_META[kind]) return res.status(400).json({error:'bad kind'});
+  const doc = await addStateEvent(kind, Math.min(5,Math.max(1,Number(level)||3)), ts);
+  res.json(doc?{ok:true,id:doc._id}:{ok:false});
+});
+app.get('/api/state-events', async (req,res)=>{
+  if(!auth(req,res))return;
+  if(!statesCol) return res.json([]);
+  try{ res.json(await statesCol.find({}).sort({ts:1}).toArray()); }
+  catch(e){ res.status(500).json({error:e.message}); }
+});
+app.delete('/api/state-event/:id', async (req,res)=>{
+  if(!auth(req,res))return;
+  if(statesCol){ try{ await statesCol.deleteOne({_id:Number(req.params.id)}); }catch(e){} }
+  res.json({ok:true});
+});
+// ссылка для психоаналитика (токен генерится один раз и хранится в БД)
+app.get('/api/states-share', (req,res)=>{
+  if(!auth(req,res))return;
+  if(!DB.statesShareToken){ DB.statesShareToken = crypto.randomBytes(18).toString('base64url'); save(DB); }
+  const base = process.env.WEBHOOK_URL || '';
+  res.json({ url: `${base}/s/${DB.statesShareToken}` });
+});
+
+// ── ПУБЛИЧНАЯ страница «Дневник состояний» — БЕЗ авторизации, только по токену.
+// Нейтральная: ни слова о карте личности, только три трека и их динамика.
+app.get('/s/:token/data', async (req,res)=>{
+  if(!DB.statesShareToken || req.params.token !== DB.statesShareToken) return res.status(404).send('not found');
+  if(!statesCol) return res.json([]);
+  try{ const list = await statesCol.find({}).sort({ts:1}).toArray(); res.json(list.map(e=>({ts:e.ts,kind:e.kind,level:e.level}))); }
+  catch(e){ res.status(500).json({error:e.message}); }
+});
+app.get('/s/:token', (req,res)=>{
+  if(!DB.statesShareToken || req.params.token !== DB.statesShareToken) return res.status(404).send('not found');
+  res.setHeader('Content-Type','text/html; charset=utf-8');
+  res.send(STATES_PAGE_HTML);
+});
+
+const STATES_PAGE_HTML = `<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Дневник состояний</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#f6f5f2;color:#2a2a2e;padding:2rem 1rem 4rem;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:1.35rem;font-weight:700;margin-bottom:0.2rem}
+.sub{color:#8a8a92;font-size:0.85rem;margin-bottom:1.8rem}
+.card{background:#fff;border:1px solid #e6e4de;border-radius:14px;padding:1.2rem 1.3rem;margin-bottom:1.2rem;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.head{display:flex;align-items:baseline;gap:0.6rem;margin-bottom:0.9rem}
+.head .em{font-size:1.4rem}
+.head .nm{font-weight:700;font-size:1.05rem}
+.head .st{margin-left:auto;font-size:0.78rem;color:#8a8a92;text-align:right}
+.stats{display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.stat .v{font-size:1.3rem;font-weight:700}
+.stat .l{font-size:0.68rem;color:#8a8a92;text-transform:uppercase;letter-spacing:0.06em}
+.hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:3px;overflow-x:auto;padding-bottom:4px}
+.hm div{width:12px;height:12px;border-radius:3px;background:#ececec}
+.wk{display:flex;align-items:flex-end;gap:3px;height:64px;margin-top:1rem}
+.wk div{flex:1;background:currentColor;border-radius:2px 2px 0 0;min-height:2px;opacity:0.8}
+.lbl{font-size:0.66rem;color:#a0a0a8;margin-top:0.35rem}
+.empty{color:#a0a0a8;font-size:0.85rem}
+footer{text-align:center;color:#b9b9c0;font-size:0.72rem;margin-top:2rem}
+</style></head><body><div class="wrap">
+<h1>Дневник состояний</h1>
+<div class="sub" id="range">загрузка…</div>
+<div id="content"></div>
+<footer>обновляется автоматически</footer>
+</div>
+<script>
+var KINDS={weed:['🌿','Марихуана','#3e7d4f'],fap:['✋','Мастурбация','#7a5fae'],cry:['💧','Слёзы','#3c76a8']};
+var DAY=86400000;
+function dayKey(ts){var d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+fetch(location.pathname.replace(/\\/?$/,'')+'/data').then(function(r){return r.json();}).then(function(list){
+  if(!list.length){document.getElementById('content').innerHTML='<div class="card empty">записей пока нет</div>';document.getElementById('range').textContent='';return;}
+  var first=new Date(list[0].ts), now=new Date();
+  document.getElementById('range').textContent='с '+first.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})+' · всего отметок: '+list.length;
+  var html='';
+  Object.keys(KINDS).forEach(function(k){
+    var m=KINDS[k], ev=list.filter(function(e){return e.kind===k;});
+    var last30=ev.filter(function(e){return e.ts>Date.now()-30*DAY;});
+    var prev30=ev.filter(function(e){return e.ts<=Date.now()-30*DAY&&e.ts>Date.now()-60*DAY;});
+    var avg=last30.length?(last30.reduce(function(s,e){return s+e.level;},0)/last30.length).toFixed(1):'—';
+    var trend=last30.length-prev30.length;
+    var lastEv=ev.length?ev[ev.length-1]:null;
+    var daysSince=lastEv?Math.floor((Date.now()-lastEv.ts)/DAY):null;
+    // хитмэп 16 недель
+    var byDay={};ev.forEach(function(e){var kk=dayKey(e.ts);byDay[kk]=Math.max(byDay[kk]||0,e.level);});
+    var cells='',start=new Date();start.setDate(start.getDate()-start.getDay()-15*7);
+    for(var w=0;w<16;w++){for(var d=0;d<7;d++){
+      var dt=new Date(start.getTime()+(w*7+d)*DAY);
+      var lv=byDay[dayKey(dt.getTime())]||0;
+      var col=lv?('background:'+m[2]+';opacity:'+(0.25+lv*0.15)):'';
+      cells+='<div style="'+col+'" title="'+dt.toLocaleDateString('ru-RU')+(lv?' · '+lv+'/5':'')+'"></div>';
+    }}
+    // недельные бары 26 недель
+    var bars='',maxW=1,wks=[];
+    for(var i=25;i>=0;i--){var c=ev.filter(function(e){return e.ts>Date.now()-(i+1)*7*DAY&&e.ts<=Date.now()-i*7*DAY;}).length;wks.push(c);if(c>maxW)maxW=c;}
+    wks.forEach(function(c){bars+='<div style="height:'+Math.max(3,Math.round(c/maxW*60))+'px;'+(c?'':'opacity:0.15;')+'" title="'+c+'"></div>';});
+    html+='<div class="card"><div class="head"><span class="em">'+m[0]+'</span><span class="nm">'+m[1]+'</span>'
+      +'<span class="st">'+(lastEv?('последний раз: '+(daysSince===0?'сегодня':daysSince+' дн назад')):'нет записей')+'</span></div>'
+      +'<div class="stats">'
+      +'<div class="stat"><div class="v">'+last30.length+'</div><div class="l">за 30 дней</div></div>'
+      +'<div class="stat"><div class="v">'+avg+'</div><div class="l">ср. интенсивность</div></div>'
+      +'<div class="stat"><div class="v" style="color:'+(trend>0?'#c0504d':trend<0?'#4f9d69':'#8a8a92')+'">'+(trend>0?'+':'')+trend+'</div><div class="l">vs пред. 30 дн</div></div>'
+      +(daysSince!=null?'<div class="stat"><div class="v">'+daysSince+'</div><div class="l">дней без</div></div>':'')
+      +'</div>'
+      +'<div class="hm">'+cells+'</div><div class="lbl">последние 16 недель · насыщенность = интенсивность</div>'
+      +'<div class="wk" style="color:'+m[2]+'">'+bars+'</div><div class="lbl">раз в неделю · последние полгода</div>'
+      +'</div>';
+  });
+  document.getElementById('content').innerHTML=html;
+});
+</script></body></html>`;
+
 // ── МЕРОПРИЯТИЯ API ──
 app.get('/api/appointments', (req,res)=>{ if(!auth(req,res))return; res.json(DB.appointments||[]); });
 app.post('/api/appointments', (req,res)=>{
@@ -1405,7 +1583,9 @@ async function setupWebhook() {
   await fetch(`${TG}/setMyCommands`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ commands: [
+      {command:'st', description:'🌗 Отметить состояние (2 тапа)'},
       {command:'cat', description:'📂 Выбрать категорию для следующего сообщения'},
+      {command:'map', description:'🗺 Ссылка на карту'},
       {command:'start', description:'Привет и справка'},
       {command:'stats', description:'📊 Статистика записей'},
       {command:'last', description:'🗂 Последние записи'},
