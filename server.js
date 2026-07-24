@@ -1237,6 +1237,17 @@ app.delete('/api/state-event/:id', async (req,res)=>{
   if(statesCol){ try{ await statesCol.deleteOne({_id:Number(req.params.id)}); }catch(e){} }
   res.json({ok:true});
 });
+// правка отметки: дата и/или интенсивность (добавить задним числом / исправить)
+app.put('/api/state-event/:id', async (req,res)=>{
+  if(!auth(req,res))return;
+  if(!statesCol) return res.status(500).json({error:'no storage'});
+  const set={};
+  if(req.body.ts!=null) set.ts=Number(req.body.ts);
+  if(req.body.level!=null) set.level=Math.min(5,Math.max(1,Number(req.body.level)));
+  if(!Object.keys(set).length) return res.status(400).json({error:'nothing to update'});
+  try{ await statesCol.updateOne({_id:Number(req.params.id)},{$set:set}); res.json({ok:true}); }
+  catch(e){ res.status(500).json({error:e.message}); }
+});
 // ссылка для психоаналитика (токен генерится один раз и хранится в БД)
 app.get('/api/states-share', (req,res)=>{
   if(!auth(req,res))return;

@@ -1055,6 +1055,20 @@ body.theme-sharp .statn{background:none;-webkit-background-clip:unset;-webkit-te
 </div>
 </div>
 
+<!-- MODAL: State Event (правка отметки состояния) -->
+<div class="mo" id="modal-state-edit">
+<div class="md" style="max-width:380px;">
+  <h3 id="se-title">Отметка</h3>
+  <div class="fg"><label>дата</label><input type="date" id="se-date"></div>
+  <div class="fg"><label>интенсивность</label><div id="se-levels" class="type-sel" style="display:flex;gap:0.4rem;"></div></div>
+  <div class="macts">
+    <button class="btncancel" id="se-del" style="color:var(--red);margin-right:auto;">🗑 удалить</button>
+    <button class="btncancel" id="cse">отмена</button>
+    <button class="btn" id="sse">сохранить</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: Board Node (блок доски истории) -->
 <div class="mo" id="modal-board-node">
 <div class="md">
@@ -3266,15 +3280,29 @@ document.getElementById('btn-sync-time')?.addEventListener('click',()=>{timeLoad
 const ST_META={weed:['🌿','марихуана','#4ade80'],fap:['✋','мастурбация','#a78bfa'],cry:['💧','слёзы','#60a5fa']};
 const ST_BARS=['▁','▂','▄','▆','█'];
 let STEVENTS=[],stLoaded=false;
+let stPickDay='today',stCustomDate=''; // за какой день ставить быструю отметку
 const DAY_MS=86400000;
+window.setStPickDay=(v)=>{stPickDay=v;renderStates();};
+window.setStCustomDate=(v)=>{stCustomDate=v;stPickDay=v?'custom':'today';renderStates();};
+function stPickTs(){
+  if(stPickDay==='yesterday'){const d=new Date();d.setDate(d.getDate()-1);d.setHours(12,0,0,0);return d.getTime();}
+  if(stPickDay==='custom'&&stCustomDate){const[y,m,dd]=stCustomDate.split('-').map(Number);return new Date(y,m-1,dd,12,0,0).getTime();}
+  return Date.now();
+}
 async function loadStates(){ try{STEVENTS=await srvFetch('/api/state-events');stLoaded=true;}catch(e){} }
 function stDayKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function renderStates(){
   const q=document.getElementById('states-quick'),c=document.getElementById('states-content');
   if(!q||!c)return;
   if(!stLoaded){stLoaded=true;loadStates().then(()=>{if(currentTab==='states')renderStates();});return;}
-  // быстрые отметки: состояние + уровень одним кликом
-  q.innerHTML=`<div class="ovrsub">быстрая отметка</div>`+Object.entries(ST_META).map(([k,[em,label]])=>
+  // быстрые отметки: состояние + уровень одним кликом; день можно выбрать (сегодня/вчера/дата)
+  const dayBtn=(v,label)=>`<button class="btn ${stPickDay===v?'':'ghost '}sec" style="font-size:0.72rem;padding:0.25rem 0.7rem;${stPickDay===v?'background:var(--accent);color:#fff;':''}" onclick="setStPickDay('${v}')">${label}</button>`;
+  q.innerHTML=`<div class="ovrsub">быстрая отметка</div>
+    <div style="display:flex;align-items:center;gap:0.45rem;margin-bottom:0.7rem;flex-wrap:wrap;">
+      <span style="font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">отметить за:</span>
+      ${dayBtn('today','сегодня')}${dayBtn('yesterday','вчера')}
+      <input type="date" id="st-custom-date" value="${stCustomDate}" onchange="setStCustomDate(this.value)" style="background:var(--surface);border:1px solid ${stPickDay==='custom'?'var(--accent)':'var(--border2)'};border-radius:6px;color:var(--text);padding:0.25rem 0.5rem;font-size:0.8rem;">
+    </div>`+Object.entries(ST_META).map(([k,[em,label]])=>
     `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem;flex-wrap:wrap;">
       <span style="width:150px;font-size:0.85rem;">${em} ${label}</span>
       ${[1,2,3,4,5].map(l=>`<button class="btn ghost" style="font-family:monospace;padding:0.3rem 0.6rem;" onclick="quickState('${k}',${l})">${ST_BARS[l-1]} ${l}</button>`).join('')}
@@ -3283,7 +3311,7 @@ function renderStates(){
   if(!STEVENTS.length){c.innerHTML='<div class="empty" style="margin-top:1rem;"><p>отметок пока нет — жми кнопки выше или /st в боте</p></div>';return;}
   const now=Date.now();
   c.innerHTML=Object.entries(ST_META).map(([k,[em,label,color]])=>{
-    const ev=STEVENTS.filter(e=>e.kind===k);
+    const ev=STEVENTS.filter(e=>e.kind===k).sort((a,b)=>a.ts-b.ts);
     const last30=ev.filter(e=>e.ts>now-30*DAY_MS),prev30=ev.filter(e=>e.ts<=now-30*DAY_MS&&e.ts>now-60*DAY_MS);
     const avg=last30.length?(last30.reduce((s,e)=>s+e.level,0)/last30.length).toFixed(1):'—';
     const trend=last30.length-prev30.length;
@@ -3300,8 +3328,8 @@ function renderStates(){
     }
     // последние события
     const recent=[...ev].reverse().slice(0,8).map(e=>
-      `<span class="ttag" style="display:inline-flex;gap:0.3rem;align-items:center;">${new Date(e.ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} ${ST_BARS[e.level-1]}${e.level}
-       <span style="cursor:pointer;opacity:0.6;" onclick="delStateEvent(${e._id})">✕</span></span>`).join(' ');
+      `<span class="ttag" style="display:inline-flex;gap:0.3rem;align-items:center;cursor:pointer;" title="изменить дату/интенсивность" onclick="openStateEdit(${e._id})">${new Date(e.ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} ${ST_BARS[e.level-1]}${e.level}
+       <span style="cursor:pointer;opacity:0.6;" onclick="event.stopPropagation();delStateEvent(${e._id})">✕</span></span>`).join(' ');
     return`<div class="fin-card" style="margin-bottom:1rem;">
       <div class="fin-name">${em} ${label}
         <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${lastEv?(daysSince===0?'сегодня':daysSince+' дн назад'):'нет записей'}</span>
@@ -3319,14 +3347,61 @@ function renderStates(){
   }).join('');
 }
 window.quickState=async(kind,level)=>{
-  const doc={_id:Date.now(),ts:Date.now(),kind,level};
+  const ts=stPickTs();
+  const doc={_id:Date.now(),ts,kind,level};
   STEVENTS.push(doc);renderStates();
-  try{await srvFetch('/api/state-event',{method:'POST',body:JSON.stringify({kind,level})});showStatus('srv-status','✓ отмечено','ok');}
-  catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
+  try{
+    const r=await srvFetch('/api/state-event',{method:'POST',body:JSON.stringify({kind,level,ts})});
+    if(r&&r.id){doc._id=r.id;renderStates();} // серверный id — чтобы правка/удаление чипа работали сразу
+    showStatus('srv-status',`✓ отмечено${stPickDay!=='today'?' ('+new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})+')':''}`,'ok');
+  }catch(e){showStatus('srv-status','ошибка: '+e.message,'err');}
 };
 window.delStateEvent=async(id)=>{
   STEVENTS=STEVENTS.filter(e=>e._id!==id);renderStates();
   try{await srvFetch('/api/state-event/'+id,{method:'DELETE'});}catch(e){}
+};
+// ── правка отметки: дата + интенсивность ──
+let seEditId=null,seLevel=3;
+function seRenderLevels(){
+  document.getElementById('se-levels').innerHTML=[1,2,3,4,5].map(l=>
+    `<span class="topt${seLevel===l?' sel':''}" style="font-family:monospace;" onclick="seSetLevel(${l})">${ST_BARS[l-1]} ${l}</span>`).join('');
+}
+window.seSetLevel=(l)=>{seLevel=l;seRenderLevels();};
+window.openStateEdit=(id)=>{
+  const e=STEVENTS.find(x=>x._id===id);
+  if(!e)return;
+  seEditId=id;seLevel=e.level;
+  const d=new Date(e.ts),p=(n)=>String(n).padStart(2,'0');
+  const m=ST_META[e.kind]||['','' ];
+  document.getElementById('se-title').textContent=`${m[0]} ${m[1]}`;
+  document.getElementById('se-date').value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  seRenderLevels();
+  document.getElementById('modal-state-edit').classList.add('open');
+};
+document.getElementById('cse').onclick=()=>closeModal('modal-state-edit');
+document.getElementById('modal-state-edit').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-state-edit');});
+document.getElementById('se-del').onclick=()=>{
+  if(seEditId==null)return;
+  if(!confirm('Удалить отметку?'))return;
+  const id=seEditId;seEditId=null;
+  closeModal('modal-state-edit');
+  delStateEvent(id);
+};
+document.getElementById('sse').onclick=async()=>{
+  if(seEditId==null)return;
+  const e=STEVENTS.find(x=>x._id===seEditId);
+  const val=document.getElementById('se-date').value;
+  if(!e||!val)return;
+  // меняем день, сохраняя исходное время суток отметки
+  const[y,m,dd]=val.split('-').map(Number);
+  const d=new Date(e.ts);d.setFullYear(y,m-1,dd);
+  const ts=d.getTime();
+  e.ts=ts;e.level=seLevel;
+  closeModal('modal-state-edit');
+  renderStates();
+  try{await srvFetch('/api/state-event/'+seEditId,{method:'PUT',body:JSON.stringify({ts,level:seLevel})});showStatus('srv-status','✓ исправлено','ok');}
+  catch(err){showStatus('srv-status','ошибка: '+err.message,'err');}
+  seEditId=null;
 };
 let statesShareUrl='';
 document.getElementById('btn-states-share')?.addEventListener('click',async()=>{
